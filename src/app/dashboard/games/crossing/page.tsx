@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, RotateCcw, Heart, PersonStanding } from 'lucide-react';
+import { addGameXP } from '@/app/actions';
+
 
 type Car = {
   id: number;
@@ -165,7 +167,28 @@ export default function CrossingGame() {
 
   const xpEarned = score * 20;
 
+  // Playing
+  const [xpPersisted, setXpPersisted] = useState(false);
+
+  useEffect(() => {
+    if ((phase === 'complete' || phase === 'hit') && !xpPersisted && xpEarned > 0) {
+      const persistXP = async () => {
+        try {
+          await addGameXP(xpEarned);
+          setXpPersisted(true);
+        } catch (error) {
+          console.error('Failed to update XP:', error);
+        }
+      };
+      persistXP();
+    }
+    if (phase === 'playing') {
+      setXpPersisted(false);
+    }
+  }, [phase, xpEarned, xpPersisted]);
+
   if (phase === 'ready') {
+
     return (
       <div className="max-w-md mx-auto text-center space-y-6 py-12 animate-fade-in">
         <Link href="/dashboard/games" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">

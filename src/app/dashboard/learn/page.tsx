@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { getCourses, getUserCourseProgress } from '../../actions';
-import { BookOpen, ChevronRight, CheckCircle2, Lock, Star } from 'lucide-react';
+import { getCourses, getUserCourseProgress, isAdmin } from '../../actions';
+import { BookOpen, ChevronRight, CheckCircle2, Lock, Star, Plus } from 'lucide-react';
 
 function LevelTag({ level }: { level: string }) {
   const config: Record<string, { bg: string; label: string }> = {
@@ -19,17 +19,30 @@ function LevelTag({ level }: { level: string }) {
 export default async function LearnPage() {
   const courses = await getCourses();
   const progress = await getUserCourseProgress();
+  const admin = await isAdmin();
 
   const progressMap = new Map(progress.map(p => [p.courseId, p]));
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Learn</span> Road Safety
-        </h1>
-        <p className="mt-2 text-muted-foreground">Master traffic rules and road safety through interactive courses</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Learn</span> Road Safety
+          </h1>
+          <p className="mt-2 text-muted-foreground">Master traffic rules and road safety through interactive courses</p>
+        </div>
+        
+        {admin && (
+          <Link
+            href="/dashboard/learn/create"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30"
+          >
+            <Plus className="h-4 w-4" />
+            Create Course
+          </Link>
+        )}
       </div>
 
       {/* Courses Grid */}

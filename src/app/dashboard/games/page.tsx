@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Gamepad2, Target, Eye, Timer, PersonStanding, ArrowRight, Star, Zap } from 'lucide-react';
+import { Gamepad2, Target, Eye, Timer, PersonStanding, ArrowRight, Star, Zap, Brain } from 'lucide-react';
 
 const games = [
   {
@@ -45,6 +45,17 @@ const games = [
     xp: '20 XP per crossing',
     difficulty: 'Medium - Hard',
     emoji: '🚶',
+  },
+  {
+    id: 'memory',
+    title: 'Sign Match Training',
+    description: 'Train your memory by matching road safety signs. Fast reflexes earn more XP!',
+    icon: Brain,
+    color: 'from-blue-500 to-cyan-600',
+    shadow: 'shadow-blue-500/25',
+    xp: 'Up to 100 XP',
+    difficulty: 'Medium',
+    emoji: '🧠',
   },
 ];
 

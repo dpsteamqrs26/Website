@@ -113,6 +113,17 @@ export const userCourseProgress = pgTable('user_course_progress', {
   completedAt: timestamp('completed_at'),
 });
 
+// Games table - tracks available games
+export const games = pgTable('games', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: text('type').notNull(), // 'crossing', 'reaction', 'memory', etc.
+  baseXpReward: integer('base_xp_reward').default(50),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type Quiz = typeof quizzes.$inferSelect;
 export type NewQuiz = typeof quizzes.$inferInsert;
 export type Question = typeof questions.$inferSelect;
@@ -127,3 +138,5 @@ export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lesson = typeof lessons.$inferSelect;
 export type NewLesson = typeof lessons.$inferInsert;
+export type Game = typeof games.$inferSelect;
+export type NewGame = typeof games.$inferInsert;

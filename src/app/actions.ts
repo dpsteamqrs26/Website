@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '../../database/db';
-import { users, quizzes, questions, attempts, courses, lessons, userLessonProgress, userCourseProgress, correctAnswers } from '../../database/schema';
+import { users, quizzes, questions, attempts, courses, lessons, userLessonProgress, userCourseProgress, correctAnswers, admins, games } from '../../database/schema';
 import { eq, desc, asc, sql, and, count } from 'drizzle-orm';
 import { currentUser } from '@clerk/nextjs/server';
 
@@ -345,4 +345,70 @@ export async function getUserStats() {
     rank: rank || 0,
     totalUsers: allUsers.length,
   };
+}
+// ─── Games ───
+export async function getGames() {
+  const result = await db
+    .select()
+    .from(games)
+    .where(eq(games.isActive, true))
+    .orderBy(asc(games.id));
+
+  return result;
+}
+
+export async function addGameXP(amount: number) {
+  const clerk = await currentUser();
+  if (!clerk) return { success: false, error: 'Not authenticated' };
+
+  const userResult = await db.select().from(users).where(eq(users.clerkId, clerk.id)).limit(1);
+  if (userResult.length === 0) return { success: false, error: 'User not found' };
+
+  const newXp = (userResult[0].xp || 0) + amount;
+  let newLevel = 'RED';
+  if (newXp >= 1500) newLevel = 'GREEN';
+  else if (newXp >= 500) newLevel = 'YELLOW';
+
+  await db
+    .update(users)
+    .set({ xp: newXp, currentLevel: newLevel })
+    .where(eq(users.clerkId, clerk.id));
+
+  return { success: true, newXp, newLevel };
+}
+
+// ─── Admin Check ───
+export async function isAdmin() {
+  const clerk = await currentUser();
+  if (!clerk) return false;
+
+  const email = clerk.emailAddresses[0]?.emailAddress;
+  if (!email) return false;
+
+  const result = await db.select().from(admins).where(eq(admins.email, email)).limit(1);
+  return result.length > 0;
+}
+
+// ─── Admin Actions ───
+export async function createCourse(data: {
+  title: string;
+  description: string;
+  levelRequirement: "RED" | "YELLOW" | "GREEN";
+  pointsAwarded: number;
+  imageUrl?: string;
+  order?: number;
+}) {
+  const admin = await isAdmin();
+  if (!admin) return { success: false, error: 'Not authorized' };
+
+  const clerk = await currentUser();
+  if (!clerk) return { success: false, error: 'Not authenticated' };
+
+  const newCourse = await db.insert(courses).values({
+    ...data,
+    createdBy: clerk.emailAddresses[0]?.emailAddress || 'Admin',
+    isActive: true,
+  }).returning();
+
+  return { success: true, course: newCourse[0] };
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
-import { Menu, X, Shield, Home, BookOpen, Gamepad2, Trophy, Award } from 'lucide-react';
+import { Menu, X, Shield, Home, BookOpen, Gamepad2, Trophy, Award, ClipboardList } from 'lucide-react';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -12,6 +12,7 @@ export default function Navbar() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/dashboard', label: 'Dashboard', icon: Shield },
     { href: '/dashboard/learn', label: 'Learn', icon: BookOpen },
+    { href: '/dashboard/quizzes', label: 'Quizzes', icon: ClipboardList },
     { href: '/dashboard/games', label: 'Games', icon: Gamepad2 },
     { href: '/dashboard/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/dashboard/achievements', label: 'Achievements', icon: Award },
