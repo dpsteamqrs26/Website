@@ -35,16 +35,23 @@ export async function getUserData() {
 export async function getLeaderboard(limit = 50) {
   const result = await db
     .select({
-      clerkId: users.clerkId,
-      xp: users.xp,
-      currentLevel: users.currentLevel,
-      streak: users.streak,
+      clerkId: correctAnswers.userId,
+      name: correctAnswers.userName,
+      xp: sql<number>`count(*)`.as('xp'), // Use count of correct answers as XP
     })
-    .from(users)
-    .orderBy(desc(users.xp))
+    .from(correctAnswers)
+    .groupBy(correctAnswers.userId, correctAnswers.userName)
+    .orderBy(desc(sql`count(*)`))
     .limit(limit);
 
-  return result;
+  // Add default level and streak since we're not using users table
+  const leaderboardWithDefaults = result.map(user => ({
+    ...user,
+    currentLevel: 'RED', // Default level
+    streak: 0, // Default streak
+  }));
+
+  return leaderboardWithDefaults;
 }
 
 // ─── Courses ───

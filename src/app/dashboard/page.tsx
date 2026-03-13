@@ -1,10 +1,35 @@
 import Link from 'next/link';
-import { getUserData, getUserStats, getLeaderboard, getCourses, getUserCourseProgress } from '../actions';
+import { getUserData, getUserStats, getCourses } from '../actions';
 import {
-  Zap, Flame, Trophy, BookOpen, Gamepad2, Award, Star,
-  ArrowRight, TrendingUp, Target, Crown, Medal, ChevronRight
-} from 'lucide-react';
+  Zap, Flame, Trophy, BookOpen, Gamepad2, Award,
+  ArrowRight, TrendingUp, Target, Crown, ChevronRight
+} from 'lucide-react';;
+interface UserData {
+  clerkId: string;
+  xp: number;
+  currentLevel: string;
+  streak: number;
+  name: string;
+  imageUrl: string;
+}
 
+interface UserStats {
+  user: { xp: number; currentLevel: string; streak: number };
+  quizAttempts: number;
+  completedCourses: number;
+  recentAttempts: any[];
+  quizPoints: number;
+  rank: number;
+  totalUsers: number;
+}
+
+interface LeaderboardUser {
+  clerkId: string;
+  xp: number;
+  currentLevel: string;
+  streak: number;
+  name: string;
+}
 function LevelBadge({ level }: { level: string }) {
   const config: Record<string, { bg: string; label: string; emoji: string }> = {
     RED: { bg: 'level-red', label: 'Beginner', emoji: '🔴' },
@@ -51,18 +76,16 @@ function XPProgressBar({ xp }: { xp: number }) {
 export default async function DashboardPage() {
   const userData = await getUserData();
   const stats = await getUserStats();
-  const leaderboard = await getLeaderboard(5);
   const courses = await getCourses();
-  const courseProgress = await getUserCourseProgress();
 
-  const xp = (userData as any)?.xp || 0;
-  const level = (userData as any)?.currentLevel || 'RED';
-  const streak = (userData as any)?.streak || 0;
-  const name = (userData as any)?.name || 'Learner';
-  const quizPoints = stats?.quizPoints || 0;
-  const rank = stats?.rank || 0;
-  const quizAttempts = stats?.quizAttempts || 0;
-  const completedCourses = stats?.completedCourses || 0;
+  const xp = (userData as UserData)?.xp || 0;
+  const level = (userData as UserData)?.currentLevel || 'RED';
+  const streak = (userData as UserData)?.streak || 0;
+  const name = (userData as UserData)?.name || 'Learner';
+  const quizPoints = (stats as UserStats)?.quizPoints || 0;
+  const rank = (stats as UserStats)?.rank || 0;
+  const quizAttempts = (stats as UserStats)?.quizAttempts || 0;
+  const completedCourses = (stats as UserStats)?.completedCourses || 0;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -85,8 +108,8 @@ export default async function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
         {[
-          { icon: Zap, label: 'Total XP', value: xp.toLocaleString(), color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-500/20' },
-          { icon: Target, label: 'Quiz Points', value: quizPoints.toLocaleString(), color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
+          { icon: Zap, label: 'Total XP', value: xp, color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-500/20' },
+          { icon: Target, label: 'Quiz Points', value: quizPoints, color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
           { icon: Flame, label: 'Streak', value: `${streak} 🔥`, color: 'from-rose-500 to-pink-600', shadow: 'shadow-rose-500/20' },
           { icon: Crown, label: 'Rank', value: rank > 0 ? `#${rank}` : 'N/A', color: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/20' },
         ].map((stat) => (
@@ -123,66 +146,30 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Two Column: Leaderboard + Quick Actions */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Leaderboard Preview */}
-        <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              Leaderboard
-            </h2>
-            <Link href="/dashboard/leaderboard" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
-              View All <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {leaderboard.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No users on the leaderboard yet. Be the first!</p>
-            ) : (
-              leaderboard.map((user, i) => (
-                <div key={user.clerkId} className={`flex items-center gap-3 rounded-xl p-3 transition-colors ${user.clerkId === userData?.clerkId ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-accent/50'}`}>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full font-bold text-sm ${i === 0 ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white' : i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' : i === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' : 'bg-muted text-muted-foreground'}`}>
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {user.clerkId === userData?.clerkId ? 'You' : `Player ${i + 1}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{(user.xp || 0).toLocaleString()} XP</p>
-                  </div>
-                  <LevelBadge level={user.currentLevel || 'RED'} />
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
-          {[
-            { href: '/dashboard/learn', icon: BookOpen, title: 'Continue Learning', desc: 'Pick up where you left off', color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
-            { href: '/dashboard/games', icon: Gamepad2, title: 'Play Games', desc: 'Test your knowledge with fun games', color: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/20' },
-            { href: '/dashboard/leaderboard', icon: Trophy, title: 'View Leaderboard', desc: 'See how you rank', color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-500/20' },
-            { href: '/dashboard/achievements', icon: Award, title: 'Achievements', desc: 'Check your earned badges', color: 'from-green-500 to-emerald-600', shadow: 'shadow-green-500/20' },
-          ].map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="group flex items-center gap-4 rounded-xl border border-border/50 bg-card p-4 transition-all card-hover"
-            >
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} ${action.shadow} shadow-lg transition-transform group-hover:scale-110`}>
-                <action.icon className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{action.title}</p>
-                <p className="text-sm text-muted-foreground">{action.desc}</p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-          ))}
-        </div>
+      {/* Quick Actions */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
+        {[
+          { href: '/dashboard/learn', icon: BookOpen, title: 'Continue Learning', desc: 'Pick up where you left off', color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
+          { href: '/dashboard/games', icon: Gamepad2, title: 'Play Games', desc: 'Test your knowledge with fun games', color: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/20' },
+          { href: '/dashboard/leaderboard', icon: Trophy, title: 'View Leaderboard', desc: 'See how you rank', color: 'from-amber-500 to-orange-500', shadow: 'shadow-amber-500/20' },
+          { href: '/dashboard/achievements', icon: Award, title: 'Achievements', desc: 'Check your earned badges', color: 'from-green-500 to-emerald-600', shadow: 'shadow-green-500/20' },
+        ].map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="group flex items-center gap-4 rounded-xl border border-border/50 bg-card p-4 transition-all card-hover"
+          >
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} ${action.shadow} shadow-lg transition-transform group-hover:scale-110`}>
+              <action.icon className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-foreground">{action.title}</p>
+              <p className="text-sm text-muted-foreground">{action.desc}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+          </Link>
+        ))}
       </div>
 
       {/* Recent Quiz Attempts */}

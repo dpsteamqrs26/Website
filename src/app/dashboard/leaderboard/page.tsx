@@ -64,7 +64,7 @@ export default async function LeaderboardPage() {
             </div>
             <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28">
               <Medal className="h-6 w-6 text-slate-400 mx-auto mb-1" />
-              <p className="text-xs font-bold truncate">Player 2</p>
+              <p className="text-xs font-bold truncate">{leaderboard[1]?.name || 'Player 2'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[1]?.xp || 0).toLocaleString()} XP</p>
             </div>
             <div className="h-20 w-28 rounded-t-xl bg-gradient-to-t from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-700 mt-1" />
@@ -77,7 +77,7 @@ export default async function LeaderboardPage() {
             </div>
             <div className="rounded-xl bg-card border border-amber-200 dark:border-amber-800 p-4 text-center w-32">
               <Crown className="h-6 w-6 text-amber-500 mx-auto mb-1" />
-              <p className="text-sm font-bold truncate">Player 1</p>
+              <p className="text-sm font-bold truncate">{leaderboard[0]?.name || 'Player 1'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[0]?.xp || 0).toLocaleString()} XP</p>
               <LevelBadge level={leaderboard[0]?.currentLevel || 'RED'} />
             </div>
@@ -91,7 +91,7 @@ export default async function LeaderboardPage() {
             </div>
             <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28">
               <Award className="h-6 w-6 text-amber-700 mx-auto mb-1" />
-              <p className="text-xs font-bold truncate">Player 3</p>
+              <p className="text-xs font-bold truncate">{leaderboard[2]?.name || 'Player 3'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[2]?.xp || 0).toLocaleString()} XP</p>
             </div>
             <div className="h-14 w-28 rounded-t-xl bg-gradient-to-t from-amber-100 to-orange-50 dark:from-amber-950/50 dark:to-amber-900/30 mt-1" />
@@ -133,7 +133,7 @@ export default async function LeaderboardPage() {
                     </span>
                   </div>
                   <span className="text-sm truncate">
-                    {isYou ? '⭐ You' : `Player ${i + 1}`}
+                    {isYou ? '⭐ You' : (user.name || `Player ${i + 1}`)}
                   </span>
                   <span className="text-sm text-right flex items-center justify-end gap-1">
                     <Zap className="h-3.5 w-3.5 text-amber-500" />
