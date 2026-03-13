@@ -229,9 +229,26 @@ export async function getQuizWithQuestions(quizId: string) {
     .where(eq(questions.quizId, quizId))
     .orderBy(asc(questions.order));
 
+  // Define a type for question options
+  interface QuestionOptions {
+    options: { id: string; text: string }[];
+    timeLimitSeconds?: number;
+    [key: string]: unknown;
+  }
+
+  // Transform questions to include timeLimitSeconds
+  const questionsWithTimeLimit = questionResult.map(q => {
+    const opts = q.options as QuestionOptions;
+    return {
+      ...q,
+      timeLimitSeconds: opts?.timeLimitSeconds || 30,
+      options: opts?.options || q.options,
+    };
+  });
+
   return {
     quiz: quizResult[0],
-    questions: questionResult,
+    questions: questionsWithTimeLimit,
   };
 }
 
@@ -411,4 +428,47 @@ export async function createCourse(data: {
   }).returning();
 
   return { success: true, course: newCourse[0] };
+}
+
+export async function createQuiz(data: {
+  title: string;
+  description?: string;
+  durationMinutes: number;
+  questions: {
+    questionText: string;
+    options: { id: string; text: string }[];
+    correctOptionId: string;
+    timeLimitSeconds: number;
+    order: number;
+  }[];
+}) {
+  const admin = await isAdmin();
+  if (!admin) return { success: false, error: 'Not authorized' };
+
+  const clerk = await currentUser();
+  if (!clerk) return { success: false, error: 'Not authenticated' };
+
+  // Create the quiz
+  const newQuiz = await db.insert(quizzes).values({
+    title: data.title,
+    description: data.description,
+    durationMinutes: data.durationMinutes,
+    createdBy: clerk.emailAddresses[0]?.emailAddress || 'Admin',
+    isActive: true,
+  }).returning();
+
+  const quizId = newQuiz[0].id;
+
+  // Create questions
+  for (const q of data.questions) {
+    await db.insert(questions).values({
+      quizId,
+      questionText: q.questionText,
+      options: { options: q.options, timeLimitSeconds: q.timeLimitSeconds }, // Store options and time limit in jsonb
+      correctOptionId: q.correctOptionId,
+      order: q.order,
+    });
+  }
+
+  return { success: true, quiz: newQuiz[0] };
 }

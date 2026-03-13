@@ -1,18 +1,30 @@
 import Link from 'next/link';
-import { getQuizzes } from '@/app/actions';
-import { ClipboardList, ChevronRight, Clock, User, Calendar, Target } from 'lucide-react';
+import { getQuizzes, isAdmin } from '@/app/actions';
+import { ClipboardList, ChevronRight, Clock, User, Calendar, Target, Plus } from 'lucide-react';
 
 export default async function QuizzesPage() {
   const quizzes = await getQuizzes();
+  const admin = await isAdmin();
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
-          <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Quizzes</span> & Assessments
-        </h1>
-        <p className="mt-2 text-muted-foreground">Challenge yourself and earn extra XP by completing road safety quizzes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Quizzes</span> & Assessments
+          </h1>
+          <p className="mt-2 text-muted-foreground">Challenge yourself and earn extra XP by completing road safety quizzes</p>
+        </div>
+        {admin && (
+          <Link
+            href="/dashboard/quizzes/create"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:scale-105"
+          >
+            <Plus className="h-4 w-4" />
+            Create Quiz
+          </Link>
+        )}
       </div>
 
       {quizzes.length === 0 ? (
