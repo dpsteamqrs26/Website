@@ -206,7 +206,14 @@ export default function SpeedTrap() {
   const [roadObstacles,setRoadObstacles]=useState<RoadObstacle[]>([]);
 
   const {user}=useUser(); const name=user?.firstName||'Guest';
-  const {remotePlayers,sendUpdate}=useMultiplayer('speedtrap',name);
+  const handleMapSync = (data: any) => {
+    if (data?.zones) {
+      zonesRef.current = data.zones;
+      setRoadObstacles(data.obstacles);
+      setCurrentLimit(data.zones[0]?.limit||50);
+    }
+  };
+  const {remotePlayers,sendUpdate,isHost,setSharedData}=useMultiplayer('speedtrap',name,handleMapSync);
 
   useEffect(()=>{
     if(phase!=='playing') return;
@@ -220,10 +227,17 @@ export default function SpeedTrap() {
 
   const start=()=>{
     setPhase('playing'); setXp(0); setZonesPassed(0); setViolations(0); setObstacleHits(0);
-    const z=generateZones(15);
-    zonesRef.current=z;
-    setRoadObstacles(generateObstacles(z));
-    setCurrentLimit(z[0]?.limit||50);
+    if (isHost || remotePlayers.length === 0 || zonesRef.current.length === 0) {
+      const z=generateZones(15);
+      zonesRef.current=z;
+      const obs = generateObstacles(z);
+      setRoadObstacles(obs);
+      setSharedData({ zones: z, obstacles: obs });
+      setCurrentLimit(z[0]?.limit||50);
+    } else {
+      zonesRef.current.forEach(z => z.passed = false);
+      setCurrentLimit(zonesRef.current[0]?.limit||50);
+    }
   };
 
   const handleZonePass=async(ok:boolean)=>{

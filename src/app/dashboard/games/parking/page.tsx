@@ -183,7 +183,13 @@ export default function ParkingSimulator() {
 
   const { user } = useUser();
   const playerName = user?.firstName||'Guest';
-  const { remotePlayers, sendUpdate } = useMultiplayer('parking', playerName);
+  const handleMapSync = (data: any) => {
+    if (data?.map) {
+      setMapData(data.map);
+      setTargetSpot(findSpot(data.map));
+    }
+  };
+  const { remotePlayers, sendUpdate, isHost, setSharedData } = useMultiplayer('parking', playerName, handleMapSync);
   const lvl = LEVEL_CONFIGS[levelIdx];
 
   useEffect(() => {
@@ -195,8 +201,12 @@ export default function ParkingSimulator() {
 
   const handleStart = (idx:number) => {
     setLevelIdx(idx);
-    const m = generateParkingMap();
-    setMapData(m);
+    let m = mapData;
+    if (isHost || remotePlayers.length === 0 || mapData.length === 0) {
+      m = generateParkingMap();
+      setMapData(m);
+      setSharedData({ map: m });
+    }
     setTargetSpot(findSpot(m));
     stateRef.timeRemaining = LEVEL_CONFIGS[idx].time;
     setPhase('playing');

@@ -12,13 +12,12 @@ export type PlayerState = {
 };
 
 /**
- * useMultiplayer — PeerJS 2-player room with shared game data.
+ * useMultiplayer — Dynamic 2-player matchmaking via in-memory Next.js API route.
  *
  * Map sharing:
  *  - Host calls `setSharedData(data)` to store map/zones/obstacles.
  *  - When a client joins, host immediately sends `MAP_SYNC` with the shared data.
  *  - Client receives it via the `onMapSync` callback.
- *  - This ensures both players play on the SAME randomly-generated map.
  */
 export function useMultiplayer(
   gameName: string,
@@ -35,21 +34,31 @@ export function useMultiplayer(
   const playersRef = useRef<Record<string, PlayerState>>({});
   const activeRef = useRef(true);
   const broadcastRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pingIntervRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sharedDataRef = useRef<any>(null);
   const onMapSyncRef = useRef(onMapSync);
   onMapSyncRef.current = onMapSync;
 
-  const HOST_ID = `qrs2526-${gameName}-room`;
-
   const cleanup = useCallback(() => {
     activeRef.current = false;
     if (broadcastRef.current) clearInterval(broadcastRef.current);
+    if (pingIntervRef.current) clearInterval(pingIntervRef.current);
+    
+    if (isHost && peerRef.current?.id) {
+      // Tell matchmaking we left
+      fetch('/api/matchmaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'LEAVE', game: gameName, peerId: peerRef.current.id }),
+      }).catch(() => {});
+    }
+
     if (peerRef.current) { try { peerRef.current.destroy(); } catch {} }
     peerRef.current = null;
     connRef.current = null;
     clientsRef.current = [];
     playersRef.current = {};
-  }, []);
+  }, [isHost, gameName]);
 
   const startHostBroadcast = useCallback(() => {
     if (broadcastRef.current) clearInterval(broadcastRef.current);
@@ -82,29 +91,53 @@ export function useMultiplayer(
       const { Peer } = await import('peerjs');
       if (!activeRef.current) return;
 
-      const tempPeer = new Peer(undefined as any, { debug: 0 });
+      // 1. Create peer with dynamic random ID
+      const peer = new Peer(undefined as any, { debug: 0 });
+      peerRef.current = peer;
 
-      tempPeer.on('open', () => {
-        if (!activeRef.current) { tempPeer.destroy(); return; }
+      peer.on('open', async (localId) => {
+        if (!activeRef.current) { peer.destroy(); return; }
 
-        const conn = tempPeer.connect(HOST_ID, { reliable: true });
+        // 2. Ask matchmaking API if there's an available room
+        try {
+          const res = await fetch('/api/matchmaking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'FIND_ROOM', game: gameName, peerId: localId })
+          });
+          const data = await res.json();
+
+          if (data.hostId && data.hostId !== localId) {
+            // Found a room! Connect as client
+            connectToHost(data.hostId);
+          } else {
+            // No room found — become host
+            becomeHost();
+          }
+        } catch (error) {
+          // If fetch fails, try to become host anyway
+          console.error("Matchmaking error:", error);
+          becomeHost();
+        }
+      });
+
+      // 3. Connect as CLIENT
+      function connectToHost(hostId: string) {
+        const conn = peer.connect(hostId, { reliable: true });
         let connected = false;
 
         conn.on('open', () => {
           connected = true;
-          peerRef.current = tempPeer;
           connRef.current = conn;
           setIsHost(false);
           setIsConnected(true);
 
           conn.on('data', (data: any) => {
             if (data.type === 'WORLD') {
-              const localId = peerRef.current?.id;
               const arr = Object.values(data.players as Record<string, PlayerState>);
-              setRemotePlayers(arr.filter((p: PlayerState) => p.id !== localId));
+              setRemotePlayers(arr.filter((p: PlayerState) => p.id !== peerRef.current?.id));
             }
             if (data.type === 'MAP_SYNC' && data.payload) {
-              // Host sent us the map data — apply it
               if (onMapSyncRef.current) onMapSyncRef.current(data.payload);
             }
             if (data.type === 'ROOM_FULL') {
@@ -113,54 +146,53 @@ export function useMultiplayer(
           });
 
           conn.on('close', () => {
+            // Host dropped — we should become host of a new room
             setIsConnected(false);
             setRemotePlayers([]);
-            tempPeer.destroy();
-            if (activeRef.current) becomeHost(Peer);
+            becomeHost();
           });
         });
 
         conn.on('error', () => {
-          if (!connected && activeRef.current) {
-            tempPeer.destroy();
-            becomeHost(Peer);
-          }
+          if (!connected && activeRef.current) becomeHost();
         });
 
         setTimeout(() => {
-          if (!connected && activeRef.current) {
-            try { tempPeer.destroy(); } catch {}
-            becomeHost(Peer);
-          }
-        }, 2500);
-      });
+          if (!connected && activeRef.current) becomeHost();
+        }, 3000);
+      }
 
-      tempPeer.on('error', () => {
-        if (activeRef.current) becomeHost(Peer);
-      });
-    }
-
-    function becomeHost(PeerClass: any) {
-      if (!activeRef.current) return;
-
-      const peer = new PeerClass(HOST_ID, { debug: 0 });
-      peerRef.current = peer;
-
-      peer.on('open', () => {
+      // 4. Become HOST
+      async function becomeHost() {
         if (!activeRef.current) return;
+
+        // Register as host
+        try {
+          await fetch('/api/matchmaking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'HOST_REGISTER', game: gameName, peerId: peer.id })
+          });
+        } catch {}
+
         setIsHost(true);
         setIsConnected(true);
         startHostBroadcast();
-      });
 
-      peer.on('error', (err: any) => {
-        if (err.type === 'unavailable-id' && activeRef.current) {
-          peer.destroy();
-          setTimeout(() => { if (activeRef.current) init(); }, 1000);
-        }
-      });
+        // Ping interval
+        if (pingIntervRef.current) clearInterval(pingIntervRef.current);
+        pingIntervRef.current = setInterval(() => {
+          fetch('/api/matchmaking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'PING', game: gameName, peerId: peer.id })
+          }).catch(() => {});
+        }, 10000);
+      }
 
+      // Listen for incoming client connections (if we are HOST)
       peer.on('connection', (conn: any) => {
+        // Enforce 2-player limit
         if (clientsRef.current.length >= 1) {
           conn.on('open', () => { conn.send({ type: 'ROOM_FULL' }); setTimeout(() => conn.close(), 500); });
           return;
@@ -169,7 +201,7 @@ export function useMultiplayer(
         clientsRef.current.push(conn);
 
         conn.on('open', () => {
-          // Send shared map data immediately to the new client
+          // Send map to joining client immediately
           if (sharedDataRef.current) {
             try { conn.send({ type: 'MAP_SYNC', payload: sharedDataRef.current }); } catch {}
           }
@@ -184,7 +216,7 @@ export function useMultiplayer(
         conn.on('close', () => {
           clientsRef.current = clientsRef.current.filter(c => c !== conn);
           const deadIds = Object.keys(playersRef.current).filter(id => {
-            return !clientsRef.current.some(c => c.peer === id) && id !== peerRef.current?.id;
+            return !clientsRef.current.some(c => c.peer === id) && id !== peer.id;
           });
           for (const id of deadIds) delete playersRef.current[id];
         });
@@ -206,7 +238,6 @@ export function useMultiplayer(
     }
   }, [isHost]);
 
-  /** Host calls this to store map/level data that will be sent to joining clients */
   const setSharedData = useCallback((data: any) => {
     sharedDataRef.current = data;
   }, []);
