@@ -30,9 +30,10 @@ type TrafficCar = {
 
 const CAR_COLORS = ['#ef4444','#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#64748b'];
 
-function generateTraffic(level: number): TrafficCar[] {
+function generateTraffic(lap: number): TrafficCar[] {
   const cars: TrafficCar[] = [];
-  const count = 4 + level * 3;
+  const count = Math.min(4 + lap * 2, 24); // More cars each lap, cap at 24
+  const speedMultiplier = 1 + (lap - 1) * 0.35; // +35% speed per lap — gets brutal fast
   for (let i = 0; i < count; i++) {
     const lane = i % NUM_LANES;
     const dir = lane < NUM_LANES / 2 ? 1 : -1;
@@ -40,7 +41,7 @@ function generateTraffic(level: number): TrafficCar[] {
       id: i,
       lane,
       x: (Math.random() - 0.5) * ROAD_LENGTH * 1.5,
-      speed: (0.06 + Math.random() * 0.04 * level) * dir,
+      speed: (0.05 + Math.random() * 0.04) * speedMultiplier * dir,
       color: CAR_COLORS[i % CAR_COLORS.length],
       length: 3 + Math.random() * 2,
     });
@@ -306,11 +307,10 @@ export default function CrossingGame3D() {
     setXp(prev => prev + earned);
     try { await addGameXP(earned); } catch {}
 
-    if (newScore % 3 === 0) {
-      const nextLevel = level + 1;
-      setLevel(nextLevel);
-      setTraffic(generateTraffic(nextLevel));
-    }
+    // Speed up EVERY crossing — level = crossing count
+    const nextLevel = newScore + 1;
+    setLevel(nextLevel);
+    setTraffic(generateTraffic(nextLevel));
   };
 
   const handleHit = async () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export type PlayerState = {
   id: string;
@@ -11,153 +11,193 @@ export type PlayerState = {
   lastSeen?: number;
 };
 
+/**
+ * useMultiplayer — PeerJS-based 2-player-only room system.
+ * 
+ * Room logic:
+ *  - First player becomes HOST with a deterministic peer ID.
+ *  - Second player connects as CLIENT.
+ *  - If a 3rd player tries to join, HOST rejects them (max 1 client).
+ *  - Players exchange state at ~20 Hz via unreliable DataChannel.
+ *  - If the host disconnects or stales, the client becomes host.
+ */
 export function useMultiplayer(gameName: string, playerName: string) {
-  const [players, setPlayers] = useState<Record<string, PlayerState>>({});
+  const [remotePlayers, setRemotePlayers] = useState<PlayerState[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isHost, setIsHost] = useState(false);
-  
+
   const peerRef = useRef<any>(null);
-  const connRef = useRef<any>(null); // host connection if client
-  const clientsRef = useRef<any[]>([]); // client connections if host
-  const playersMapRef = useRef<Record<string, PlayerState>>({});
-  
-  const HOST_ID = `qrs2526-host-${gameName}`;
+  const connRef = useRef<any>(null);
+  const clientsRef = useRef<any[]>([]);
+  const playersRef = useRef<Record<string, PlayerState>>({});
+  const activeRef = useRef(true);
+  const broadcastRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const HOST_ID = `qrs2526-${gameName}-room`;
+
+  // Cleanup
+  const cleanup = useCallback(() => {
+    activeRef.current = false;
+    if (broadcastRef.current) clearInterval(broadcastRef.current);
+    if (peerRef.current) { try { peerRef.current.destroy(); } catch {} }
+    peerRef.current = null;
+    connRef.current = null;
+    clientsRef.current = [];
+    playersRef.current = {};
+  }, []);
+
+  // Start broadcast loop (host only)
+  const startHostBroadcast = useCallback(() => {
+    if (broadcastRef.current) clearInterval(broadcastRef.current);
+    broadcastRef.current = setInterval(() => {
+      const now = Date.now();
+      const map = { ...playersRef.current };
+      let changed = false;
+      for (const [id, s] of Object.entries(map)) {
+        if (now - (s.lastSeen || 0) > 4000) { delete map[id]; changed = true; }
+      }
+      if (changed) playersRef.current = map;
+
+      const arr = Object.values(map);
+      setRemotePlayers(prev => {
+        const localId = peerRef.current?.id;
+        return arr.filter(p => p.id !== localId);
+      });
+
+      const payload = { type: 'WORLD', players: map };
+      for (const c of clientsRef.current) {
+        try { if (c.open) c.send(payload); } catch {}
+      }
+    }, 50);
+  }, []);
 
   useEffect(() => {
-    let active = true;
+    activeRef.current = true;
 
     async function init() {
-      // Dynamic import to avoid SSR crash in Next.js
       const { Peer } = await import('peerjs');
+      if (!activeRef.current) return;
 
-      // Attempt to connect to the host first
-      const tempPeer = new Peer();
-      
-      tempPeer.on('open', (localId) => {
-        if (!active) return;
-        
-        console.log("Looking for Host:", HOST_ID);
-        const conn = tempPeer.connect(HOST_ID, { reliable: false }); // UDP style
-        
+      // Try to connect to existing host first
+      const tempPeer = new Peer(undefined as any, { debug: 0 });
+
+      tempPeer.on('open', () => {
+        if (!activeRef.current) { tempPeer.destroy(); return; }
+
+        const conn = tempPeer.connect(HOST_ID, { reliable: true });
+        let connected = false;
+
         conn.on('open', () => {
-          // WE ARE A CLIENT
-          console.log("Connected as Client!");
+          connected = true;
+          // We are CLIENT
+          peerRef.current = tempPeer;
+          connRef.current = conn;
           setIsHost(false);
           setIsConnected(true);
-          connRef.current = conn;
-          peerRef.current = tempPeer;
 
-          // Listen for world syncs from host
           conn.on('data', (data: any) => {
-            if (data.type === 'WORLD_STATE') {
-              setPlayers(data.players);
+            if (data.type === 'WORLD') {
+              const localId = peerRef.current?.id;
+              const arr = Object.values(data.players as Record<string, PlayerState>);
+              setRemotePlayers(arr.filter((p: PlayerState) => p.id !== localId));
             }
+            if (data.type === 'ROOM_FULL') {
+              // Room is full, just stay disconnected
+              conn.close();
+            }
+          });
+
+          conn.on('close', () => {
+            // Host left, try to become host
+            setIsConnected(false);
+            setRemotePlayers([]);
+            tempPeer.destroy();
+            if (activeRef.current) becomeHost(Peer);
           });
         });
 
-        conn.on('error', () => becomeHost(Peer));
-        
-        // If connection doesn't open quickly, the host might not exist or peerjs cloud lag
-        setTimeout(() => {
-          if (!isConnected && active && !connRef.current?.open) {
-             tempPeer.destroy();
-             becomeHost(Peer);
+        conn.on('error', () => {
+          if (!connected && activeRef.current) {
+            tempPeer.destroy();
+            becomeHost(Peer);
           }
-        }, 3000);
+        });
+
+        // Fallback: if connection doesn't open in 2.5s, become host
+        setTimeout(() => {
+          if (!connected && activeRef.current) {
+            try { tempPeer.destroy(); } catch {}
+            becomeHost(Peer);
+          }
+        }, 2500);
+      });
+
+      tempPeer.on('error', () => {
+        if (activeRef.current) becomeHost(Peer);
       });
     }
 
     function becomeHost(PeerClass: any) {
-      if (!active) return;
-      console.log("Becoming Host...");
-      
-      const peer = new PeerClass(HOST_ID);
+      if (!activeRef.current) return;
+
+      const peer = new PeerClass(HOST_ID, { debug: 0 });
       peerRef.current = peer;
 
       peer.on('open', () => {
+        if (!activeRef.current) return;
         setIsHost(true);
         setIsConnected(true);
-        console.log("Hosted Room successfully.");
+        startHostBroadcast();
       });
-      
+
       peer.on('error', (err: any) => {
-         // If ID is actually taken but we failed to connect earlier, just retry connection
-         console.log("Host error", err.type);
+        // ID taken: another tab/user is already host. Try connecting again
+        if (err.type === 'unavailable-id' && activeRef.current) {
+          peer.destroy();
+          setTimeout(() => { if (activeRef.current) init(); }, 1000);
+        }
       });
 
       peer.on('connection', (conn: any) => {
+        // 2-player limit: only accept 1 client
+        if (clientsRef.current.length >= 1) {
+          conn.on('open', () => { conn.send({ type: 'ROOM_FULL' }); setTimeout(() => conn.close(), 500); });
+          return;
+        }
+
         clientsRef.current.push(conn);
-        
+
         conn.on('data', (data: any) => {
-          if (data.type === 'PLAYER_UPDATE') {
-            playersMapRef.current[data.state.id] = { ...data.state, lastSeen: Date.now() };
+          if (data.type === 'UPDATE' && data.state) {
+            playersRef.current[data.state.id] = { ...data.state, lastSeen: Date.now() };
           }
         });
 
         conn.on('close', () => {
-          clientsRef.current = clientsRef.current.filter((c: any) => c !== conn);
+          clientsRef.current = clientsRef.current.filter(c => c !== conn);
+          // Remove disconnected player
+          const deadIds = Object.keys(playersRef.current).filter(id => {
+            return !clientsRef.current.some(c => c.peer === id) && id !== peerRef.current?.id;
+          });
+          for (const id of deadIds) delete playersRef.current[id];
         });
       });
     }
 
     init();
+    return cleanup;
+  }, [gameName, cleanup, startHostBroadcast]);
 
-    return () => {
-      active = false;
-      if (peerRef.current) peerRef.current.destroy();
-    };
-  }, [gameName]);
-
-  // HOST LOOP: Broadcast world state 20 times a second
-  useEffect(() => {
-    if (!isHost) return;
-    
-    const interval = setInterval(() => {
-      // Clean up dead players
-      const now = Date.now();
-      const updatedMap = { ...playersMapRef.current };
-      let changed = false;
-      
-      for (const [id, state] of Object.entries(updatedMap)) {
-        if (now - (state.lastSeen || 0) > 3000) {
-          delete updatedMap[id];
-          changed = true;
-        }
-      }
-      
-      if (changed) playersMapRef.current = updatedMap;
-
-      // Broadcast
-      const payload = { type: 'WORLD_STATE', players: playersMapRef.current };
-      setPlayers(updatedMap); // Host sets its own state for rendering
-      
-      clientsRef.current.forEach(conn => {
-        if (conn.open) conn.send(payload);
-      });
-    }, 50); // 20 updates per second
-
-    return () => clearInterval(interval);
-  }, [isHost]);
-
-  // Send local state
-  const sendUpdate = (state: Omit<PlayerState, 'id'>) => {
-    if (!isConnected || !peerRef.current) return;
-    const localId = peerRef.current.id;
-    if (!localId) return;
-
-    const fullState = { ...state, id: localId };
+  const sendUpdate = useCallback((state: Omit<PlayerState, 'id'>) => {
+    if (!peerRef.current?.id) return;
+    const fullState: PlayerState = { ...state, id: peerRef.current.id } as PlayerState;
 
     if (isHost) {
-      // Host just updates its own map
-      playersMapRef.current[localId] = { ...fullState, lastSeen: Date.now() };
+      playersRef.current[peerRef.current.id] = { ...fullState, lastSeen: Date.now() };
     } else if (connRef.current?.open) {
-      // Client sends to Host
-      connRef.current.send({ type: 'PLAYER_UPDATE', state: fullState });
+      try { connRef.current.send({ type: 'UPDATE', state: fullState }); } catch {}
     }
-  };
-
-  // Convert dictionary to array for easy mapping
-  const remotePlayers = Object.values(players).filter(p => peerRef.current && p.id !== peerRef.current.id);
+  }, [isHost]);
 
   return { remotePlayers, sendUpdate, isConnected, isHost };
 }
