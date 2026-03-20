@@ -7,17 +7,19 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Sky, Environment, ContactShadows, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
+import { useUser } from '@clerk/nextjs';
+import { useMultiplayer, PlayerState } from '../useMultiplayer';
 
 // ---------------------------------------------------------
 // CONSTANTS & GAME DATA
 // ---------------------------------------------------------
 const TILE_SIZE = 8;
 const MAP_SIZE = 16;
-const MAX_SPEED = 0.25;      // Slower speed for parking
+const MAX_SPEED = 0.25;      
 const ACCEL = 0.003;
 const BRAKE = 0.015;
 const FRICTION = 0.96;
-const STEER_SPEED = 0.055;   // Tighter steering
+const STEER_SPEED = 0.055;   
 
 const LEVELS = [
   {
@@ -25,7 +27,7 @@ const LEVELS = [
     name: "Level 1: Straight In",
     xp: 20,
     time: 60,
-    startPos: { x: 0, z: -10, angle: Math.PI }, // Facing -Z
+    startPos: { x: 0, z: -10, angle: Math.PI }, 
     targetSpot: { x: 0, z: 20, angle: Math.PI },
     map: [
       [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -52,7 +54,7 @@ const LEVELS = [
     xp: 40,
     time: 90,
     startPos: { x: -20, z: 0, angle: -Math.PI/2 },
-    targetSpot: { x: 10, z: -20, angle: -Math.PI/2 }, // Horizontal spot
+    targetSpot: { x: 10, z: -20, angle: -Math.PI/2 }, 
     map: [
       [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
       [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
@@ -74,17 +76,13 @@ const LEVELS = [
   }
 ];
 
-// Helper to get map tile at 3D world coords
 function getTileAt(x: number, z: number, mapData: number[][]) {
   const col = Math.floor(x / TILE_SIZE) + MAP_SIZE / 2;
   const row = Math.floor(z / TILE_SIZE) + MAP_SIZE / 2;
-  if (row < 0 || row >= MAP_SIZE || col < 0 || col >= MAP_SIZE) return 2; // boundary is building/wall
+  if (row < 0 || row >= MAP_SIZE || col < 0 || col >= MAP_SIZE) return 2; 
   return mapData[row][col];
 }
 
-// ---------------------------------------------------------
-// HUD STORE (Refs for performance)
-// ---------------------------------------------------------
 const stateRef = {
   speed: 0,
   gear: 'N',
@@ -96,16 +94,64 @@ const stateRef = {
 };
 
 // ---------------------------------------------------------
+// REMOTE CAR COMPONENT
+// ---------------------------------------------------------
+function RemoteCar({ data }: { data: PlayerState }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const wheelsRef = useRef<THREE.Group[]>([]);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.position.lerp(new THREE.Vector3(data.x, 0, data.z), 0.3);
+      const currentQuat = groupRef.current.quaternion;
+      const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, data.angle, 0));
+      currentQuat.slerp(targetQuat, 0.3);
+      
+      wheelsRef.current.forEach(w => {
+        if(w) w.rotation.x -= data.speed * 2;
+      });
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh position={[0, 0.45, 0]} castShadow>
+        <boxGeometry args={[2.0, 0.6, 4.2]} />
+        <meshStandardMaterial color={data.color || "#0284c7"} roughness={0.3} metalness={0.7} />
+      </mesh>
+      <mesh position={[0, 1.05, -0.3]} castShadow>
+        <boxGeometry args={[1.7, 0.6, 2.0]} />
+        <meshStandardMaterial color="#111" transparent opacity={0.6} />
+      </mesh>
+      {[[-1.0, 0.35, 1.4], [1.0, 0.35, 1.4], [-1.0, 0.35, -1.4], [1.0, 0.35, -1.4]].map((pos, i) => (
+        <group key={i} position={pos as [number,number,number]} ref={el => { if(el) wheelsRef.current[i] = el; }}>
+          <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
+            <cylinderGeometry args={[0.35, 0.35, 0.25, 16]} />
+            <meshStandardMaterial color="#222" roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// ---------------------------------------------------------
 // CAR RIG & PHYSICS
 // ---------------------------------------------------------
 function CarController({
   level,
   onLevelComplete,
   onFail,
+  remotePlayers,
+  sendUpdate,
+  playerName
 }: {
   level: typeof LEVELS[0];
   onLevelComplete: () => void;
   onFail: () => void;
+  remotePlayers: PlayerState[];
+  sendUpdate: any;
+  playerName: string;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const wheelsRef = useRef<THREE.Group[]>([]);
@@ -116,21 +162,16 @@ function CarController({
     angle: level.startPos.angle,
     pos: new THREE.Vector3(level.startPos.x, 0, level.startPos.z),
     isDead: false,
+    carColor: `#${Math.floor(Math.random()*16777215).toString(16)}`
   });
 
   const keys = useRef<{ [key: string]: boolean }>({});
-  
-  // Gamepad State
-  const joyState = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    // Reset state for new level
-    carData.current = {
-      speed: 0,
-      angle: level.startPos.angle,
-      pos: new THREE.Vector3(level.startPos.x, 0, level.startPos.z),
-      isDead: false,
-    };
+    carData.current.speed = 0;
+    carData.current.angle = level.startPos.angle;
+    carData.current.pos.set(level.startPos.x, 0, level.startPos.z);
+    carData.current.isDead = false;
     stateRef.health = 100;
     stateRef.parkProgress = 0;
     stateRef.isLevelComplete = false;
@@ -151,26 +192,22 @@ function CarController({
 
     const data = carData.current;
 
-    // --- Gamepad Input ---
-    let gpX = 0;
-    let gpY = 0;
+    let gpX = 0; let gpY = 0;
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = gamepads[0];
     if (gp) {
       if (Math.abs(gp.axes[0]) > 0.15) gpX = gp.axes[0]; 
-      if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) gpY = -1; // Gas
-      else if (gp.buttons[6]?.pressed || gp.buttons[4]?.pressed) gpY = 1; // Brake/Rev
+      if (gp.buttons[7]?.pressed || gp.buttons[5]?.pressed) gpY = -1; 
+      else if (gp.buttons[6]?.pressed || gp.buttons[4]?.pressed) gpY = 1; 
       else if (Math.abs(gp.axes[1]) > 0.15) gpY = gp.axes[1]; 
     }
 
-    // --- Inputs ---
     const goForward = keys.current['KeyW'] || keys.current['ArrowUp'] || gpY < -0.2;
     const goBackward = keys.current['KeyS'] || keys.current['ArrowDown'] || gpY > 0.2;
     const goLeft = keys.current['KeyA'] || keys.current['ArrowLeft'] || gpX < -0.2;
     const goRight = keys.current['KeyD'] || keys.current['ArrowRight'] || gpX > 0.2;
     const brake = keys.current['Space'];
 
-    // --- Acceleration ---
     if (goForward) data.speed += ACCEL;
     else if (goBackward) data.speed -= ACCEL;
     else data.speed *= FRICTION;
@@ -180,7 +217,6 @@ function CarController({
     data.speed = THREE.MathUtils.clamp(data.speed, -MAX_SPEED * 0.5, MAX_SPEED);
     if (Math.abs(data.speed) < 0.002) data.speed = 0;
 
-    // --- Steering ---
     const isMoving = Math.abs(data.speed) > 0.005;
     if (isMoving) {
       const steerDir = data.speed > 0 ? 1 : -1;
@@ -189,23 +225,22 @@ function CarController({
       if (goRight) steerAmount = -STEER_SPEED;
       if (gpX !== 0) steerAmount = -gpX * STEER_SPEED;
       
-      // Dynamic steering ratio (tighter at very low speeds, looser at higher speeds)
       const speedRatio = Math.abs(data.speed) / MAX_SPEED;
       const turnMultiplier = THREE.MathUtils.lerp(1.5, 0.5, speedRatio); 
       data.angle += steerAmount * steerDir * turnMultiplier;
 
-      // Rotate front wheels visually
       wheelsRef.current[0]?.rotation.set(0, steerAmount * 12, 0); 
       wheelsRef.current[1]?.rotation.set(0, steerAmount * 12, 0); 
     }
 
-    // --- Collisions ---
     const dx = Math.sin(data.angle) * data.speed;
     const dz = Math.cos(data.angle) * data.speed;
     const nextX = data.pos.x + dx;
     const nextZ = data.pos.z + dz;
     
-    // Check points representing corners of the car to avoid clipping
+    let crashImpact = 0;
+
+    // Check Map Geometry
     const carRadius = 2.0;
     const tCenter = getTileAt(nextX, nextZ, level.map);
     const tFront  = getTileAt(nextX + Math.sin(data.angle)*carRadius, nextZ + Math.cos(data.angle)*carRadius, level.map);
@@ -213,13 +248,28 @@ function CarController({
     const tLeft   = getTileAt(nextX - Math.cos(data.angle)*carRadius, nextZ + Math.sin(data.angle)*carRadius, level.map);
     const tRight  = getTileAt(nextX + Math.cos(data.angle)*carRadius, nextZ - Math.sin(data.angle)*carRadius, level.map);
 
+    let collision = false;
     if (tCenter === 2 || tFront === 2 || tBack === 2 || tLeft === 2 || tRight === 2) {
+      crashImpact = Math.abs(data.speed) * 100;
+      collision = true;
+    }
+
+    // Check Multiplayer Collisions
+    for (const rp of remotePlayers) {
+      const dist = Math.hypot(data.pos.x - rp.x, data.pos.z - rp.z);
+      if (dist < 3.2) {
+        crashImpact = Math.abs(data.speed) * 150 + 20; // Hitting cars is very damaging!
+        collision = true;
+        break;
+      }
+    }
+
+    if (collision) {
       data.speed *= -0.3; // Rebound
-      const impact = Math.abs(data.speed) * 100;
-      if (impact > 1) { // Apply meaningful damage
-        stateRef.health -= Math.max(5, Math.floor(impact * 8));
-        stateRef.message = "CRASH! Careful!";
-        setTimeout(() => { if (stateRef.message==="CRASH! Careful!") stateRef.message="" }, 1500);
+      if (crashImpact > 1) { 
+        stateRef.health -= Math.max(5, Math.floor(crashImpact * 8));
+        stateRef.message = "COLLISION DAMAGE!!!";
+        setTimeout(() => { if (stateRef.message==="COLLISION DAMAGE!!!") stateRef.message="" }, 1500);
       }
       
       if (stateRef.health <= 0) {
@@ -231,10 +281,13 @@ function CarController({
       data.pos.z = nextZ;
     }
 
-    // --- Parking Target Alignment Logic ---
+    // MULTIPLAYER SYNC
+    if (Math.random() < 0.5) {
+      sendUpdate({ x: data.pos.x, z: data.pos.z, angle: data.angle, speed: data.speed, name: playerName, color: data.carColor });
+    }
+
     const distToTarget = Math.hypot(data.pos.x - level.targetSpot.x, data.pos.z - level.targetSpot.z);
     
-    // Calculate smallest angle difference (accounting for 180 degree parking)
     let angleDiff = Math.abs((data.angle % Math.PI) - (level.targetSpot.angle % Math.PI));
     if (angleDiff > Math.PI / 2) angleDiff = Math.PI - angleDiff;
 
@@ -250,7 +303,6 @@ function CarController({
       stateRef.parkProgress = 0;
     }
 
-    // --- Apply Transforms ---
     if (groupRef.current) {
       groupRef.current.position.copy(data.pos);
       groupRef.current.rotation.y = data.angle;
@@ -259,18 +311,8 @@ function CarController({
     stateRef.speed = Math.abs(data.speed) * 120; // kmh visual scalar
     stateRef.gear = data.speed > 0.005 ? 'D' : data.speed < -0.005 ? 'R' : 'P';
 
-    // --- Camera (Slightly higher, tighter angle for precise parking) ---
-    const idealOffset = new THREE.Vector3(
-      -Math.sin(data.angle) * 16,
-      12,
-      -Math.cos(data.angle) * 16
-    );
-    const idealLookAt = new THREE.Vector3(
-      data.pos.x,
-      data.pos.y,
-      data.pos.z
-    );
-    
+    const idealOffset = new THREE.Vector3(-Math.sin(data.angle) * 16, 12, -Math.cos(data.angle) * 16);
+    const idealLookAt = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
     camera.position.lerp(idealOffset.add(data.pos), 0.1);
     camera.lookAt(idealLookAt);
   });
@@ -279,13 +321,12 @@ function CarController({
     <group ref={groupRef}>
       <mesh position={[0, 0.45, 0]} castShadow>
         <boxGeometry args={[2.0, 0.6, 4.2]} />
-        <meshStandardMaterial color="#0284c7" roughness={0.3} metalness={0.7} />
+        <meshStandardMaterial color={carData.current.carColor} roughness={0.3} metalness={0.7} />
       </mesh>
       <mesh position={[0, 1.05, -0.3]} castShadow>
         <boxGeometry args={[1.7, 0.6, 2.0]} />
         <meshStandardMaterial color="#111" transparent opacity={0.8} />
       </mesh>
-      {/* Lights out when dead */}
       <mesh position={[-0.7, 0.4, 2.15]}>
         <boxGeometry args={[0.3, 0.2, 0.1]} />
         <meshBasicMaterial color="#ffffcc" />
@@ -303,7 +344,6 @@ function CarController({
         <meshBasicMaterial color="#ff0000" />
       </mesh>
       
-      {/* 4 Wheels */}
       {[[-1.0, 0.35, 1.4], [1.0, 0.35, 1.4], [-1.0, 0.35, -1.4], [1.0, 0.35, -1.4]].map((pos, i) => (
         <group key={i} position={pos as [number,number,number]} ref={el => { if(el) wheelsRef.current[i] = el; }}>
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -329,7 +369,6 @@ function LevelEnvironment({ level }: { level: typeof LEVELS[0] }) {
       const z = (row - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
 
       if (tile === 2) {
-        // Concrete Walls
         blocks.push(
           <mesh key={`${row}-${col}`} position={[x, 2, z]} castShadow receiveShadow>
             <boxGeometry args={[TILE_SIZE, 4, TILE_SIZE]} />
@@ -337,7 +376,6 @@ function LevelEnvironment({ level }: { level: typeof LEVELS[0] }) {
           </mesh>
         );
       } else if (tile === 3) {
-        // Parking Spot Indicator Overlay
         blocks.push(
           <group key={`park-${row}-${col}`} position={[x, 0.02, z]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -357,14 +395,10 @@ function LevelEnvironment({ level }: { level: typeof LEVELS[0] }) {
   return (
     <group>
       {blocks}
-      
-      {/* Concrete / Asphalt Base Plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[MAP_SIZE * TILE_SIZE, MAP_SIZE * TILE_SIZE]} />
         <meshStandardMaterial color="#374151" roughness={0.95} />
       </mesh>
-      
-      {/* Subtle grid lines for parking lot feel */}
       <gridHelper args={[MAP_SIZE * TILE_SIZE, MAP_SIZE, '#4b5563', '#4b5563']} position={[0, 0.01, 0]} />
     </group>
   );
@@ -378,12 +412,14 @@ export default function ParkingSimulator() {
   const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
   const [hudUpdates, setHudUpdates] = useState(0);
 
+  const { user } = useUser();
+  const playerName = user?.firstName || 'Guest';
+  const { remotePlayers, sendUpdate } = useMultiplayer('parking', playerName);
+
   const level = LEVELS[currentLevelIdx];
 
   useEffect(() => {
     if (phase !== 'playing') return;
-    
-    // Setup interval to read from stateRef to update HUD
     const hudInterval = setInterval(() => {
       stateRef.timeRemaining -= 1;
       if (stateRef.timeRemaining <= 0) {
@@ -405,20 +441,12 @@ export default function ParkingSimulator() {
 
   const handleLevelComplete = async () => {
     setPhase('win');
-    try {
-      await addGameXP(level.xp);
-    } catch (e) {
-      console.error("Failed to add parking XP", e);
-    }
+    try { await addGameXP(level.xp); } catch (e) { console.error("Failed to add parking XP", e); }
   };
 
   const handleFail = () => setPhase('fail');
-
   const formatTime = (secs: number) => `${Math.floor(secs / 60)}:${(Math.max(0, secs) % 60).toString().padStart(2, '0')}`;
 
-  // -------------------------------------------------------
-  // RENDER INTERFACES
-  // -------------------------------------------------------
   if (phase === 'lobby') {
     return (
       <div className="max-w-3xl mx-auto py-12 px-6 animate-fade-in font-outfit space-y-8">
@@ -438,6 +466,7 @@ export default function ParkingSimulator() {
           <h1 className="text-5xl font-black">Parking Master 3D</h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Test your precision driving without scratching the paint. Gamepads are highly recommended for precision steering!
+            <strong className="text-primary block mt-2">✨ MULTIPLAYER ENABLED ✨</strong>
           </p>
         </div>
 
@@ -451,10 +480,7 @@ export default function ParkingSimulator() {
                   <span className="flex items-center gap-1 text-sm text-blue-500 font-bold"><Clock className="w-4 h-4"/> {lvl.time}s Limit</span>
                 </div>
               </div>
-              <button
-                onClick={() => handleStart(index)}
-                className="w-full py-4 rounded-xl font-bold bg-foreground text-background shadow-lg hover:scale-[1.02] transition-transform"
-              >
+              <button onClick={() => handleStart(index)} className="w-full py-4 rounded-xl font-bold bg-foreground text-background shadow-lg hover:scale-[1.02] transition-transform">
                 SELECT LEVEL
               </button>
             </div>
@@ -475,14 +501,12 @@ export default function ParkingSimulator() {
               {phase === 'win' ? 'You aligned it flawlessly in the spot.' : stateRef.health <= 0 ? 'Your car took too much damage!' : 'Time ran out!'}
             </p>
           </div>
-
           {phase === 'win' && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl py-4 flex flex-col items-center justify-center">
-              <span className="text-4xl font-black text-amber-500">+{level.xp}</span>
-              <span className="text-xs font-bold uppercase tracking-widest text-amber-500/70">XP Earned</span>
-            </div>
+             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl py-4 flex flex-col items-center justify-center">
+               <span className="text-4xl font-black text-amber-500">+{level.xp}</span>
+               <span className="text-xs font-bold uppercase tracking-widest text-amber-500/70">XP Earned</span>
+             </div>
           )}
-
           <div className="flex flex-col gap-3 pt-4">
             <button onClick={() => setPhase('lobby')} className="w-full py-4 rounded-xl font-bold bg-foreground text-background">
               Level Select
@@ -499,26 +523,32 @@ export default function ParkingSimulator() {
   return (
     <div className="relative w-full h-[85vh] bg-black rounded-3xl overflow-hidden border border-border/50 shadow-2xl font-outfit">
       
-      {/* 3D SCENE */}
       <Canvas shadows camera={{ position: [0, 20, 20], fov: 50 }}>
         <color attach="background" args={['#1e293b']} />
         <ambientLight intensity={0.5} />
         <directionalLight castShadow position={[-20, 50, 20]} intensity={1.5} shadow-mapSize={[2048, 2048]} />
         <LevelEnvironment level={level} />
-        <CarController level={level} onLevelComplete={handleLevelComplete} onFail={handleFail} />
+        
+        {/* Render Local Player */}
+        <CarController level={level} onLevelComplete={handleLevelComplete} onFail={handleFail} remotePlayers={remotePlayers} sendUpdate={sendUpdate} playerName={playerName} />
+
+        {/* Render Remote Players */}
+        {remotePlayers.map(p => <RemoteCar key={p.id} data={p} />)}
       </Canvas>
 
-      {/* OVERLAY HUD */}
       <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between">
-        
-        {/* Top HUD */}
         <div className="flex justify-between items-start pointer-events-auto">
           <button onClick={() => setPhase('lobby')} className="bg-black/60 backdrop-blur-md text-white border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2 font-bold hover:bg-black/80 transition-colors">
             <ArrowLeft className="w-5 h-5"/> Quit
           </button>
           
           <div className="flex gap-4">
-             {/* Health Bar */}
+            {/* Multiplayer Counter */}
+            <div className="bg-black/60 backdrop-blur-md border border-white/10 text-white px-4 py-3 rounded-2xl flex flex-col items-center justify-center shadow-lg">
+               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 animate-pulse text-green-400">Multiplayer</span>
+               <span className="text-sm font-black">{remotePlayers.length + 1} Online</span>
+            </div>
+
             <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-xl w-40 flex flex-col justify-center">
                <span className="text-[10px] font-black uppercase text-gray-400 mb-1 flex justify-between">
                  Car Condition <span>{Math.round(stateRef.health)}%</span>
@@ -537,7 +567,6 @@ export default function ParkingSimulator() {
           </div>
         </div>
 
-        {/* Center Toast */}
         <div className="flex-1 flex items-center justify-center">
            {stateRef.message && (
              <div className="bg-red-500/90 backdrop-blur-sm text-white px-8 py-3 rounded-full font-black text-xl shadow-2xl border-2 border-red-300 animate-fade-in flex items-center gap-3">
@@ -554,7 +583,6 @@ export default function ParkingSimulator() {
            )}
         </div>
 
-        {/* Bottom HUD */}
         <div className="flex justify-between items-end">
           <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-4 flex items-center gap-4">
             <div className="flex flex-col items-center w-16 h-16 justify-center rounded-full border-4 border-blue-500">
@@ -564,12 +592,7 @@ export default function ParkingSimulator() {
               {stateRef.gear}
             </div>
           </div>
-
-          <div className="hidden lg:block bg-black/40 backdrop-blur-md px-6 py-2 rounded-xl text-xs font-bold text-gray-400">
-            Hold Brake (Space/LT) to stop faster. Steer precisely.
-          </div>
         </div>
-
       </div>
     </div>
   );
