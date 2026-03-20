@@ -1,0 +1,1 @@
+﻿.next/dev/types/validator.ts(251,39): error TS2306: File 'C:/Users/achyu/Desktop/QRS2526 Website/myway/src/app/api/matchmaking/route.ts' is not a module.

@@ -206,14 +206,15 @@ export default function SpeedTrap() {
   const [roadObstacles,setRoadObstacles]=useState<RoadObstacle[]>([]);
 
   const {user}=useUser(); const name=user?.firstName||'Guest';
-  const handleMapSync = (data: any) => {
-    if (data?.zones) {
-      zonesRef.current = data.zones;
-      setRoadObstacles(data.obstacles);
-      setCurrentLimit(data.zones[0]?.limit||50);
+  const handleCustomEvent = (data: any) => {
+    if (data.type === 'START_1V1') {
+      zonesRef.current = data.payload.zones;
+      setRoadObstacles(data.payload.obstacles);
+      setCurrentLimit(data.payload.zones[0]?.limit||50);
+      setPhase('playing'); setXp(0); setZonesPassed(0); setViolations(0); setObstacleHits(0);
     }
   };
-  const {remotePlayers,sendUpdate,isHost,setSharedData}=useMultiplayer('speedtrap',name,handleMapSync);
+  const {remotePlayers,sendUpdate,sendCustomEvent}=useMultiplayer('speedtrap',name,handleCustomEvent);
 
   useEffect(()=>{
     if(phase!=='playing') return;
@@ -227,17 +228,12 @@ export default function SpeedTrap() {
 
   const start=()=>{
     setPhase('playing'); setXp(0); setZonesPassed(0); setViolations(0); setObstacleHits(0);
-    if (isHost || remotePlayers.length === 0 || zonesRef.current.length === 0) {
-      const z=generateZones(15);
-      zonesRef.current=z;
-      const obs = generateObstacles(z);
-      setRoadObstacles(obs);
-      setSharedData({ zones: z, obstacles: obs });
-      setCurrentLimit(z[0]?.limit||50);
-    } else {
-      zonesRef.current.forEach(z => z.passed = false);
-      setCurrentLimit(zonesRef.current[0]?.limit||50);
-    }
+    const z=generateZones(15);
+    const obs=generateObstacles(z);
+    zonesRef.current=z;
+    setRoadObstacles(obs);
+    setCurrentLimit(z[0]?.limit||50);
+    sendCustomEvent({ type: 'START_1V1', payload: { zones: z, obstacles: obs } });
   };
 
   const handleZonePass=async(ok:boolean)=>{
@@ -260,7 +256,15 @@ export default function SpeedTrap() {
           Drive through 15 speed zones with **cones, barriers, and parked cars** blocking the road! Obey speed limits and dodge obstacles. Use WASD + steering. <strong className="text-primary block mt-2">✨ 2-PLAYER RACE ✨</strong>
         </p>
       </div>
-      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">START DRIVING</button>
+      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">START DRIVING SOLO</button>
+      
+      {remotePlayers.length > 0 && (
+        <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in z-50">
+          <button onClick={start} className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
+            <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 

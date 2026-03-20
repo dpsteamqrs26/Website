@@ -183,13 +183,17 @@ export default function ParkingSimulator() {
 
   const { user } = useUser();
   const playerName = user?.firstName||'Guest';
-  const handleMapSync = (data: any) => {
-    if (data?.map) {
-      setMapData(data.map);
-      setTargetSpot(findSpot(data.map));
+  const handleCustomEvent = (data: any) => {
+    if (data.type === 'START_1V1') {
+      const idx = data.payload.levelIdx;
+      setMapData(data.payload.map);
+      setTargetSpot(data.payload.targetSpot);
+      setLevelIdx(idx);
+      stateRef.timeRemaining = LEVEL_CONFIGS[idx].time;
+      setPhase('playing');
     }
   };
-  const { remotePlayers, sendUpdate, isHost, setSharedData } = useMultiplayer('parking', playerName, handleMapSync);
+  const { remotePlayers, sendUpdate, isHost, sendCustomEvent } = useMultiplayer('parking', playerName, handleCustomEvent);
   const lvl = LEVEL_CONFIGS[levelIdx];
 
   useEffect(() => {
@@ -201,14 +205,13 @@ export default function ParkingSimulator() {
 
   const handleStart = (idx:number) => {
     setLevelIdx(idx);
-    let m = mapData;
-    if (isHost || remotePlayers.length === 0 || mapData.length === 0) {
-      m = generateParkingMap();
-      setMapData(m);
-      setSharedData({ map: m });
-    }
-    setTargetSpot(findSpot(m));
+    const m = generateParkingMap();
+    const ts = findSpot(m);
+    setMapData(m);
+    setTargetSpot(ts);
     stateRef.timeRemaining = LEVEL_CONFIGS[idx].time;
+    // Notify opponent
+    sendCustomEvent({ type: 'START_1V1', payload: { levelIdx: idx, map: m, targetSpot: ts } });
     setPhase('playing');
   };
 
@@ -238,10 +241,17 @@ export default function ParkingSimulator() {
                 <span className="flex items-center gap-1 text-sm text-blue-500 font-bold"><Clock className="w-4 h-4"/> {c.time}s</span>
               </div>
             </div>
-            <button onClick={()=>handleStart(i)} className="w-full py-4 rounded-xl font-bold bg-foreground text-background shadow-lg hover:scale-[1.02] transition-transform">SELECT</button>
+            <button onClick={()=>handleStart(i)} className="w-full py-4 rounded-xl font-bold bg-foreground text-background shadow-lg hover:scale-[1.02] transition-transform text-sm">PLAY SOLO</button>
           </div>
         ))}
       </div>
+      {remotePlayers.length > 0 && (
+        <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in">
+          <button onClick={() => handleStart(0)} className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
+            <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 

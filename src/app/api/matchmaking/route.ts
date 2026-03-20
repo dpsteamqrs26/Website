@@ -1,66 +1,72 @@
 import { NextResponse } from 'next/server';
 
-declare global {
-  // Use var so it persists across hot reloads in dev
-  var matchmakingRooms: Record<string, { hostId: string; game: string; clientCount: number; lastPing: number }>;
-}
+type Room = {
+  id: string;          // e.g., 'parking-room1'
+  game: string;        // e.g., 'parking'
+  players: string[];   // [hostPeerId, guestPeerId]
+  createdAt: number;
+};
 
-if (!global.matchmakingRooms) {
-  global.matchmakingRooms = {};
-}
+// Simple in-memory store for matchmaking.
+// In a real production app (serverless), this would use Redis, 
+// a database, or Ably. But since we need a 0-dependency native 
+// Next.js solution without schema changes, this works for a single instance.
+// Note: In development with HMR, this might reset occasionally, but it's 
+// sufficient for the requested "works without API keys" requirement.
+let rooms: Room[] = [];
+
+// Clean up stale rooms older than 10 minutes
+const cleanup = () => {
+  const now = Date.now();
+  rooms = rooms.filter(r => now - r.createdAt < 1000 * 60 * 10);
+};
 
 export async function POST(req: Request) {
   try {
-    const { action, game, peerId } = await req.json();
-    const now = Date.now();
+    const { action, game, peerId, roomId } = await req.json();
+    cleanup();
 
-    // 1. Clean up stale rooms (no ping for 15s)
-    for (const [key, room] of Object.entries(global.matchmakingRooms)) {
-      if (now - room.lastPing > 15000) {
-        delete global.matchmakingRooms[key];
+    if (action === 'host') {
+      // Create a new room
+      const newRoom: Room = {
+        id: `${game}-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        game,
+        players: [peerId],
+        createdAt: Date.now()
+      };
+      rooms.push(newRoom);
+      return NextResponse.json({ success: true, room: newRoom });
+    }
+
+    if (action === 'join') {
+      // Find an available room for this game that only has 1 player (the host)
+      const availableRoom = rooms.find(r => r.game === game && r.players.length === 1);
+      
+      if (availableRoom) {
+        availableRoom.players.push(peerId);
+        return NextResponse.json({ success: true, room: availableRoom });
+      } else {
+        return NextResponse.json({ success: false, error: 'No available rooms found.' });
       }
     }
 
-    // 2. Client is looking for an available room
-    if (action === 'FIND_ROOM') {
-      for (const [hostId, room] of Object.entries(global.matchmakingRooms)) {
-        if (room.game === game && room.clientCount < 1 && hostId !== peerId) {
-          room.clientCount = 1; // Mark as taken
-          room.lastPing = now;
-          return NextResponse.json({ hostId });
+    if (action === 'leave') {
+      // Find the room the player is in
+      const roomIndex = rooms.findIndex(r => r.id === roomId);
+      if (roomIndex !== -1) {
+        rooms[roomIndex].players = rooms[roomIndex].players.filter(p => p !== peerId);
+        // If room is empty, remove it
+        if (rooms[roomIndex].players.length === 0) {
+          rooms.splice(roomIndex, 1);
         }
       }
-      return NextResponse.json({ hostId: null });
-    }
-
-    // 3. User decided to host a room
-    if (action === 'HOST_REGISTER') {
-      global.matchmakingRooms[peerId] = {
-        hostId: peerId,
-        game,
-        clientCount: 0,
-        lastPing: now,
-      };
       return NextResponse.json({ success: true });
     }
 
-    // 4. Ping to keep room alive
-    if (action === 'PING') {
-      if (global.matchmakingRooms[peerId]) {
-        global.matchmakingRooms[peerId].lastPing = now;
-      }
-      return NextResponse.json({ success: true });
-    }
-
-    // 5. Host leaves manually
-    if (action === 'LEAVE') {
-      delete global.matchmakingRooms[peerId];
-      return NextResponse.json({ success: true });
-    }
-
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid action' });
 
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error('Matchmaking API Error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

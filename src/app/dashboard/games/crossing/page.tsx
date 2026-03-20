@@ -289,7 +289,13 @@ export default function CrossingGame3D() {
 
   const { user } = useUser();
   const playerName = user?.firstName || 'Guest';
-  const { remotePlayers, sendUpdate } = useMultiplayer('crossing', playerName);
+  const handleCustomEvent = (data: any) => {
+    if (data.type === 'START_1V1') {
+      setPhase('playing'); setLevel(1); setScore(0); setLives(3); setXp(0);
+      setTraffic(data.payload.traffic);
+    }
+  };
+  const { remotePlayers, sendUpdate, sendCustomEvent } = useMultiplayer('crossing', playerName, handleCustomEvent);
 
   const startGame = () => {
     setPhase('playing');
@@ -297,7 +303,9 @@ export default function CrossingGame3D() {
     setScore(0);
     setLives(3);
     setXp(0);
-    setTraffic(generateTraffic(1));
+    const tr = generateTraffic(1);
+    setTraffic(tr);
+    if (remotePlayers.length > 0) sendCustomEvent({ type: 'START_1V1', payload: { traffic: tr } });
   };
 
   const handleCross = async () => {
@@ -340,8 +348,15 @@ export default function CrossingGame3D() {
           </p>
         </div>
         <button onClick={startGame} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">
-          START CROSSING
+          START CROSSING SOLO
         </button>
+        {remotePlayers.length > 0 && (
+          <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in z-50">
+            <button onClick={startGame} className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
+              <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
+            </button>
+          </div>
+        )}
       </div>
     );
   }

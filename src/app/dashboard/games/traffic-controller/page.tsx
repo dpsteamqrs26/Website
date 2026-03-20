@@ -6,6 +6,8 @@ import { ArrowLeft, Zap, AlertTriangle } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
+import { useUser } from '@clerk/nextjs';
+import { useMultiplayer, PlayerState } from '../useMultiplayer';
 
 type LightState = 'red' | 'green';
 type Dir = 'ns' | 'ew';
@@ -82,12 +84,30 @@ export default function TrafficController() {
   const nsRef = useRef<LightState>('green');
   const ewRef = useRef<LightState>('red');
 
+  const { user } = useUser();
+  const playerName = user?.firstName || 'Guest';
+
+  const handleCustomEvent = useCallback((data: any) => {
+    if (data.type === 'START_1V1') {
+      setPhase('playing'); setXp(0); setCrashes(0); setPassed(0); setTimeLeft(120);
+      setNsLight('green'); setEwLight('red'); nsRef.current='green'; ewRef.current='red';
+      setCars([]);
+    }
+  }, []);
+  
+  const { remotePlayers, sendUpdate, sendCustomEvent } = useMultiplayer('traffic', playerName, handleCustomEvent);
+
   const toggleLights = useCallback(() => {
     setNsLight(p => { const n = p==='green'?'red':'green'; nsRef.current=n; return n; });
     setEwLight(p => { const n = p==='green'?'red':'green'; ewRef.current=n; return n; });
+    // Keep remote synced via standard positional data if needed, but here they both play solo or see the same cars if we sync the seed.
+    // For now, traffic controller is purely individual scoring, but they start at the same time.
   }, []);
 
   const start = () => {
+    if (remotePlayers.length > 0) {
+      sendCustomEvent({ type: 'START_1V1' });
+    }
     setPhase('playing'); setXp(0); setCrashes(0); setPassed(0); setTimeLeft(120);
     setNsLight('green'); setEwLight('red'); nsRef.current='green'; ewRef.current='red';
     setCars([]);
@@ -159,6 +179,10 @@ export default function TrafficController() {
 
         return updated.filter(c => c.progress <= 38);
       });
+      // PING position so other players can see us standing near the intersection
+      if (Math.random() < 0.1 && remotePlayers.length > 0) {
+        sendUpdate({ x: 0, z: 0, angle: 0, speed: 0, name: playerName, color: '#ff0000' });
+      }
     }, 33); // ~30 fps
 
     const kd = (e: KeyboardEvent) => { if (e.code === 'Space') toggleLights(); };
@@ -174,7 +198,15 @@ export default function TrafficController() {
         <h1 className="text-5xl font-black">Traffic Controller 3D</h1>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">Manage traffic at a busy 3D intersection! Press SPACE or click the button to toggle lights. Cars stop correctly at reds and go on green. +10 XP per safe pass, -20 XP per collision.</p>
       </div>
-      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">START</button>
+      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">START SOLO</button>
+
+      {remotePlayers.length > 0 && (
+        <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in z-50">
+          <button onClick={start} className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
+            <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 

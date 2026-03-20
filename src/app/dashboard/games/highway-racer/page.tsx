@@ -150,9 +150,20 @@ export default function HighwayRacer() {
   const [xp,setXp]=useState(0);
   const [dist,setDist]=useState(0);
   const {user}=useUser(); const name=user?.firstName||'Guest';
-  const {remotePlayers,sendUpdate}=useMultiplayer('highway',name);
 
-  const start=()=>{setPhase('playing');setLives(3);setXp(0);setDist(0);};
+  const handleCustomEvent = useCallback((data: any) => {
+    if (data.type === 'START_1V1') {
+      setPhase('playing');setLives(3);setXp(0);setDist(0);
+    }
+  }, []);
+  const {remotePlayers,sendUpdate,sendCustomEvent}=useMultiplayer('highway',name,handleCustomEvent);
+
+  const start=()=>{
+    if (remotePlayers.length > 0) {
+      sendCustomEvent({ type: 'START_1V1' });
+    }
+    setPhase('playing');setLives(3);setXp(0);setDist(0);
+  };
   const crash=useCallback(async()=>{setLives(p=>{const n=p-1;if(n<=0)setPhase('gameover');return n}); setXp(p=>Math.max(0,p-15)); try{await addGameXP(-15)}catch{}},[]);
   const tick=useCallback(async()=>{setDist(p=>p+1);setXp(p=>p+5);try{await addGameXP(5)}catch{}},[]);
 
@@ -164,7 +175,15 @@ export default function HighwayRacer() {
         <h1 className="text-5xl font-black">Highway Racer 3D</h1>
         <p className="text-lg text-muted-foreground max-w-md mx-auto">Dodge oncoming traffic on a fast 3-lane highway! Use A/D or gamepad to switch lanes. +5 XP/2s, -15 XP per crash.<strong className="text-primary block mt-2">✨ 2-PLAYER MULTIPLAYER ✨</strong></p>
       </div>
-      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">RACE!</button>
+      <button onClick={start} className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all">RACE SOLO</button>
+
+      {remotePlayers.length > 0 && (
+        <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in z-50">
+          <button onClick={start} className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
+            <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 
