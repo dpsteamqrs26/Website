@@ -21,34 +21,53 @@ const BRAKE = 0.015;
 const FRICTION = 0.98;
 const STEER_SPEED = 0.04;
 
-const MAP = [
-  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-  [2,0,0,0,0,0,0,0,1,1,1,0,3,3,3,0,0,0,0,2],
-  [2,0,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,0,2],
-  [2,0,2,2,2,1,0,0,1,1,1,0,0,0,0,0,1,2,0,2],
-  [2,0,0,0,0,1,0,0,1,1,1,0,2,2,2,0,1,0,0,2],
-  [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-  [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-  [2,1,1,0,0,1,1,2,2,2,2,2,2,0,0,1,1,0,0,2],
-  [2,1,1,0,0,1,1,2,2,2,2,2,2,0,0,1,1,0,0,2],
-  [2,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,2],
-  [2,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,3,3,2],
-  [2,0,0,0,0,1,1,0,0,2,2,2,2,0,0,1,1,3,3,2],
-  [2,0,2,2,2,1,1,0,0,2,2,2,2,0,0,1,1,0,0,2],
-  [2,0,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2],
-  [2,0,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2],
-  [2,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,2],
-  [2,2,2,2,2,2,2,0,1,1,1,0,2,2,2,2,2,2,2,2],
-  [2,2,2,2,2,2,2,0,1,1,1,0,2,2,2,2,2,2,2,2],
-  [2,0,3,3,3,0,0,0,1,1,1,0,0,0,0,0,0,0,0,2],
-  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-];
+function generateRandomCityMap(): number[][] {
+  const map: number[][] = Array.from({ length: MAP_SIZE }, () => Array(MAP_SIZE).fill(0));
+  // Walls on boundaries
+  for (let i = 0; i < MAP_SIZE; i++) { map[0][i] = 2; map[MAP_SIZE-1][i] = 2; map[i][0] = 2; map[i][MAP_SIZE-1] = 2; }
+  // Carve main road arteries (2-wide roads)
+  const hRoads = [5, 6, 10, 11, 14, 15]; // horizontal road rows
+  const vRoads = [5, 6, 10, 11, 14, 15]; // vertical road columns
+  for (let r = 1; r < MAP_SIZE - 1; r++) {
+    for (let c = 1; c < MAP_SIZE - 1; c++) {
+      if (hRoads.includes(r) || vRoads.includes(c)) map[r][c] = 1;
+    }
+  }
+  // Random side streets
+  for (let i = 0; i < 6; i++) {
+    const isH = Math.random() > 0.5;
+    const pos = 2 + Math.floor(Math.random() * (MAP_SIZE - 4));
+    for (let j = 1; j < MAP_SIZE - 1; j++) {
+      if (isH) { if (map[pos][j] === 0) map[pos][j] = Math.random() > 0.4 ? 1 : 0; }
+      else { if (map[j][pos] === 0) map[j][pos] = Math.random() > 0.4 ? 1 : 0; }
+    }
+  }
+  // Fill remaining empty spaces with buildings or grass
+  for (let r = 1; r < MAP_SIZE - 1; r++) {
+    for (let c = 1; c < MAP_SIZE - 1; c++) {
+      if (map[r][c] === 0) map[r][c] = Math.random() > 0.35 ? 2 : 0;
+    }
+  }
+  // Place 4-8 parking spots on road-adjacent empty/grass tiles
+  let parkCount = 0;
+  for (let r = 2; r < MAP_SIZE - 2 && parkCount < 8; r++) {
+    for (let c = 2; c < MAP_SIZE - 2 && parkCount < 8; c++) {
+      if (map[r][c] === 0 && (map[r-1][c] === 1 || map[r+1][c] === 1 || map[r][c-1] === 1 || map[r][c+1] === 1)) {
+        if (Math.random() > 0.7) { map[r][c] = 3; parkCount++; }
+      }
+    }
+  }
+  if (parkCount === 0) { map[2][3] = 3; map[MAP_SIZE-3][MAP_SIZE-4] = 3; }
+  return map;
+}
+
+let currentMap = generateRandomCityMap();
 
 function getTileAt(x: number, z: number) {
   const col = Math.floor(x / TILE_SIZE) + MAP_SIZE / 2;
   const row = Math.floor(z / TILE_SIZE) + MAP_SIZE / 2;
   if (row < 0 || row >= MAP_SIZE || col < 0 || col >= MAP_SIZE) return 2; 
-  return MAP[row][col];
+  return currentMap[row][col];
 }
 
 const stateRef = {
@@ -309,7 +328,7 @@ function CityEnvironment() {
   
   for (let row = 0; row < MAP_SIZE; row++) {
     for (let col = 0; col < MAP_SIZE; col++) {
-      const tile = MAP[row][col];
+      const tile = currentMap[row][col];
       const x = (col - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
       const z = (row - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
 
@@ -345,8 +364,8 @@ function CityEnvironment() {
         <planeGeometry args={[MAP_SIZE * TILE_SIZE, MAP_SIZE * TILE_SIZE]} />
         <meshStandardMaterial color="#2a2a2a" roughness={0.8} />
       </mesh>
-      {MAP.map((rowArr, row) => 
-        rowArr.map((tile, col) => {
+      {currentMap.map((rowArr: number[], row: number) => 
+        rowArr.map((tile: number, col: number) => {
           if (tile === 0 || tile === 2) { 
             const x = (col - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
             const z = (row - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;

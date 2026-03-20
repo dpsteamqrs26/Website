@@ -1,7 +1,79 @@
 import Link from 'next/link';
-import { Gamepad2, Target, Eye, Timer, PersonStanding, ArrowRight, Star, Zap, Brain } from 'lucide-react';
+import { Gamepad2, Target, Eye, Timer, PersonStanding, ArrowRight, Zap, Brain, Car, Radar, TrafficCone } from 'lucide-react';
 
 const games = [
+  {
+    id: 'roadsafety',
+    title: 'Road Safety Simulator',
+    description: 'Full 3D open-world city driving with traffic lights, parking, and random map generation. Multiplayer enabled!',
+    icon: Car,
+    color: 'from-violet-500 to-purple-600',
+    shadow: 'shadow-violet-500/25',
+    xp: 'Up to 50 XP',
+    difficulty: 'Hard',
+    emoji: '🚗',
+    badges: ['3D', 'Multiplayer', 'Random Maps'],
+  },
+  {
+    id: 'parking',
+    title: 'Parking Master 3D',
+    description: 'Precision parking in randomly generated lots. Park in the green spot without damaging your car!',
+    icon: Car,
+    color: 'from-indigo-500 to-purple-600',
+    shadow: 'shadow-indigo-500/25',
+    xp: 'Up to 60 XP',
+    difficulty: 'Medium - Hard',
+    emoji: '🅿️',
+    badges: ['3D', 'Multiplayer', 'Random Maps'],
+  },
+  {
+    id: 'crossing',
+    title: 'Road Crossing 3D',
+    description: 'Cross busy 3D lanes of traffic safely! Frogger-style gameplay with increasing difficulty.',
+    icon: PersonStanding,
+    color: 'from-green-500 to-emerald-600',
+    shadow: 'shadow-green-500/25',
+    xp: '20 XP per crossing',
+    difficulty: 'Medium',
+    emoji: '🚶',
+    badges: ['3D', 'Multiplayer'],
+  },
+  {
+    id: 'highway-racer',
+    title: 'Highway Racer 3D',
+    description: 'Dodge oncoming traffic on a fast 3-lane highway! Lane-switching survival at its finest.',
+    icon: Radar,
+    color: 'from-red-500 to-orange-600',
+    shadow: 'shadow-red-500/25',
+    xp: '+5 XP / 2 sec',
+    difficulty: 'Hard',
+    emoji: '🏎️',
+    badges: ['3D', 'Multiplayer'],
+  },
+  {
+    id: 'traffic-controller',
+    title: 'Traffic Controller 3D',
+    description: 'Manage traffic lights at a busy 3D intersection. Keep the flow moving without causing crashes!',
+    icon: TrafficCone,
+    color: 'from-yellow-500 to-red-600',
+    shadow: 'shadow-yellow-500/25',
+    xp: '10 XP per safe pass',
+    difficulty: 'Medium',
+    emoji: '🚦',
+    badges: ['3D'],
+  },
+  {
+    id: 'speed-trap',
+    title: 'Speed Trap 3D',
+    description: 'Drive through speed-limit zones at the correct speed. Obey every sign or face XP penalties!',
+    icon: Radar,
+    color: 'from-blue-500 to-cyan-600',
+    shadow: 'shadow-blue-500/25',
+    xp: '15 XP per zone',
+    difficulty: 'Medium',
+    emoji: '🚗',
+    badges: ['3D', 'Multiplayer'],
+  },
   {
     id: 'quiz',
     title: 'Traffic Sign Quiz',
@@ -12,6 +84,7 @@ const games = [
     xp: '10 XP per correct answer',
     difficulty: 'Easy - Medium',
     emoji: '🚦',
+    badges: [],
   },
   {
     id: 'spot-danger',
@@ -23,6 +96,7 @@ const games = [
     xp: '25 XP per game',
     difficulty: 'Medium',
     emoji: '⚠️',
+    badges: [],
   },
   {
     id: 'reaction',
@@ -34,17 +108,7 @@ const games = [
     xp: 'Up to 30 XP',
     difficulty: 'Easy',
     emoji: '🚥',
-  },
-  {
-    id: 'crossing',
-    title: 'Road Crossing Simulator',
-    description: 'Practice safe road crossing. Wait for the right moment and cross without getting hit!',
-    icon: PersonStanding,
-    color: 'from-green-500 to-emerald-600',
-    shadow: 'shadow-green-500/25',
-    xp: '20 XP per crossing',
-    difficulty: 'Medium - Hard',
-    emoji: '🚶',
+    badges: [],
   },
   {
     id: 'memory',
@@ -56,6 +120,7 @@ const games = [
     xp: 'Up to 100 XP',
     difficulty: 'Medium',
     emoji: '🧠',
+    badges: [],
   },
 ];
 
@@ -65,13 +130,13 @@ export default function GamesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
-          <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">Mini Games</span>
+          <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">Game Arena</span>
         </h1>
-        <p className="mt-2 text-muted-foreground">Test your road safety knowledge with fun, interactive games</p>
+        <p className="mt-2 text-muted-foreground">Master road safety through 3D simulations, quizzes, and reflex challenges</p>
       </div>
 
       {/* Games Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 stagger-children">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
         {games.map((game) => (
           <Link
             key={game.id}
@@ -92,6 +157,19 @@ export default function GamesPage() {
                 </div>
               </div>
               <p className="mb-4 text-sm text-muted-foreground">{game.description}</p>
+
+              {/* Badges */}
+              {game.badges.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {game.badges.map(badge => (
+                    <span key={badge} className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                      badge === '3D' ? 'bg-purple-500/15 text-purple-500 dark:text-purple-400' :
+                      badge === 'Multiplayer' ? 'bg-green-500/15 text-green-600 dark:text-green-400' :
+                      'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                    }`}>{badge}</span>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center gap-3 mb-4">
                 <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
