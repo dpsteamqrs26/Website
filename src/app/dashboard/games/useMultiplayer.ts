@@ -12,16 +12,19 @@ export type PlayerState = {
 };
 
 /**
- * useMultiplayer — PeerJS-based 2-player-only room system.
- * 
- * Room logic:
- *  - First player becomes HOST with a deterministic peer ID.
- *  - Second player connects as CLIENT.
- *  - If a 3rd player tries to join, HOST rejects them (max 1 client).
- *  - Players exchange state at ~20 Hz via unreliable DataChannel.
- *  - If the host disconnects or stales, the client becomes host.
+ * useMultiplayer — PeerJS 2-player room with shared game data.
+ *
+ * Map sharing:
+ *  - Host calls `setSharedData(data)` to store map/zones/obstacles.
+ *  - When a client joins, host immediately sends `MAP_SYNC` with the shared data.
+ *  - Client receives it via the `onMapSync` callback.
+ *  - This ensures both players play on the SAME randomly-generated map.
  */
-export function useMultiplayer(gameName: string, playerName: string) {
+export function useMultiplayer(
+  gameName: string,
+  playerName: string,
+  onMapSync?: (data: any) => void,
+) {
   const [remotePlayers, setRemotePlayers] = useState<PlayerState[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -32,10 +35,12 @@ export function useMultiplayer(gameName: string, playerName: string) {
   const playersRef = useRef<Record<string, PlayerState>>({});
   const activeRef = useRef(true);
   const broadcastRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sharedDataRef = useRef<any>(null);
+  const onMapSyncRef = useRef(onMapSync);
+  onMapSyncRef.current = onMapSync;
 
   const HOST_ID = `qrs2526-${gameName}-room`;
 
-  // Cleanup
   const cleanup = useCallback(() => {
     activeRef.current = false;
     if (broadcastRef.current) clearInterval(broadcastRef.current);
@@ -46,7 +51,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
     playersRef.current = {};
   }, []);
 
-  // Start broadcast loop (host only)
   const startHostBroadcast = useCallback(() => {
     if (broadcastRef.current) clearInterval(broadcastRef.current);
     broadcastRef.current = setInterval(() => {
@@ -59,7 +63,7 @@ export function useMultiplayer(gameName: string, playerName: string) {
       if (changed) playersRef.current = map;
 
       const arr = Object.values(map);
-      setRemotePlayers(prev => {
+      setRemotePlayers(() => {
         const localId = peerRef.current?.id;
         return arr.filter(p => p.id !== localId);
       });
@@ -78,7 +82,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
       const { Peer } = await import('peerjs');
       if (!activeRef.current) return;
 
-      // Try to connect to existing host first
       const tempPeer = new Peer(undefined as any, { debug: 0 });
 
       tempPeer.on('open', () => {
@@ -89,7 +92,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
 
         conn.on('open', () => {
           connected = true;
-          // We are CLIENT
           peerRef.current = tempPeer;
           connRef.current = conn;
           setIsHost(false);
@@ -101,14 +103,16 @@ export function useMultiplayer(gameName: string, playerName: string) {
               const arr = Object.values(data.players as Record<string, PlayerState>);
               setRemotePlayers(arr.filter((p: PlayerState) => p.id !== localId));
             }
+            if (data.type === 'MAP_SYNC' && data.payload) {
+              // Host sent us the map data — apply it
+              if (onMapSyncRef.current) onMapSyncRef.current(data.payload);
+            }
             if (data.type === 'ROOM_FULL') {
-              // Room is full, just stay disconnected
               conn.close();
             }
           });
 
           conn.on('close', () => {
-            // Host left, try to become host
             setIsConnected(false);
             setRemotePlayers([]);
             tempPeer.destroy();
@@ -123,7 +127,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
           }
         });
 
-        // Fallback: if connection doesn't open in 2.5s, become host
         setTimeout(() => {
           if (!connected && activeRef.current) {
             try { tempPeer.destroy(); } catch {}
@@ -151,7 +154,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
       });
 
       peer.on('error', (err: any) => {
-        // ID taken: another tab/user is already host. Try connecting again
         if (err.type === 'unavailable-id' && activeRef.current) {
           peer.destroy();
           setTimeout(() => { if (activeRef.current) init(); }, 1000);
@@ -159,13 +161,19 @@ export function useMultiplayer(gameName: string, playerName: string) {
       });
 
       peer.on('connection', (conn: any) => {
-        // 2-player limit: only accept 1 client
         if (clientsRef.current.length >= 1) {
           conn.on('open', () => { conn.send({ type: 'ROOM_FULL' }); setTimeout(() => conn.close(), 500); });
           return;
         }
 
         clientsRef.current.push(conn);
+
+        conn.on('open', () => {
+          // Send shared map data immediately to the new client
+          if (sharedDataRef.current) {
+            try { conn.send({ type: 'MAP_SYNC', payload: sharedDataRef.current }); } catch {}
+          }
+        });
 
         conn.on('data', (data: any) => {
           if (data.type === 'UPDATE' && data.state) {
@@ -175,7 +183,6 @@ export function useMultiplayer(gameName: string, playerName: string) {
 
         conn.on('close', () => {
           clientsRef.current = clientsRef.current.filter(c => c !== conn);
-          // Remove disconnected player
           const deadIds = Object.keys(playersRef.current).filter(id => {
             return !clientsRef.current.some(c => c.peer === id) && id !== peerRef.current?.id;
           });
@@ -199,5 +206,10 @@ export function useMultiplayer(gameName: string, playerName: string) {
     }
   }, [isHost]);
 
-  return { remotePlayers, sendUpdate, isConnected, isHost };
+  /** Host calls this to store map/level data that will be sent to joining clients */
+  const setSharedData = useCallback((data: any) => {
+    sharedDataRef.current = data;
+  }, []);
+
+  return { remotePlayers, sendUpdate, isConnected, isHost, setSharedData };
 }

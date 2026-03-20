@@ -504,8 +504,11 @@ export default function RoadSafety3DGame() {
   const { user } = useUser();
   const playerName = user?.firstName || 'Guest';
 
-  // Multiplayer Hook Setup
-  const { remotePlayers, sendUpdate } = useMultiplayer('roadsafety', playerName);
+  // Multiplayer Hook Setup — host shares map with joining clients
+  const handleMapSync = (data: any) => {
+    if (data?.map) { currentMap = data.map; }
+  };
+  const { remotePlayers, sendUpdate, isHost, setSharedData } = useMultiplayer('roadsafety', playerName, handleMapSync);
 
   const handleXPAdd = async (amount: number) => {
     try { await addGameXP(amount); } catch (e) { console.error("Failed to add XP in 3D game", e); }
@@ -532,6 +535,11 @@ export default function RoadSafety3DGame() {
             stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
             stateRef.timeRemaining = 300; stateRef.mission = 'Find the green parking spots!';
             stateRef.parkTimer = 0;
+            // Only generate a new map if we are the host (first player)
+            if (isHost || remotePlayers.length === 0) {
+              currentMap = generateRandomCityMap();
+              setSharedData({ map: currentMap });
+            }
             setPhase('playing');
           }}
           className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all"
