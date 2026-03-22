@@ -2,276 +2,248 @@ import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import {
   Shield, BookOpen, Gamepad2, Trophy, Zap, BarChart3,
-  ArrowRight, CheckCircle2, Users, Target, Star
+  ArrowRight, Target, Star, MonitorPlay, Cpu, Orbit, Sparkles, Navigation
 } from "lucide-react";
-
-function TrafficLight() {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl bg-zinc-800 p-3 shadow-2xl">
-      <div className="h-10 w-10 rounded-full bg-red-500 animate-traffic-blink shadow-lg shadow-red-500/50" style={{ animationDelay: '0s' }} />
-      <div className="h-10 w-10 rounded-full bg-yellow-400 animate-traffic-blink shadow-lg shadow-yellow-400/50" style={{ animationDelay: '0.5s' }} />
-      <div className="h-10 w-10 rounded-full bg-green-500 animate-traffic-blink shadow-lg shadow-green-500/50" style={{ animationDelay: '1s' }} />
-    </div>
-  );
-}
-
-function HeroIllustration() {
-  return (
-    <div className="relative w-full max-w-md mx-auto">
-      {/* Road */}
-      <div className="relative h-64 flex items-end justify-center">
-        {/* Traffic signals */}
-        <div className="absolute top-0 left-8 animate-float" style={{ animationDelay: '0s' }}>
-          <TrafficLight />
-        </div>
-        <div className="absolute top-4 right-12 animate-float" style={{ animationDelay: '1s' }}>
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30 text-white text-2xl font-bold">
-            🚸
-          </div>
-        </div>
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 animate-float" style={{ animationDelay: '0.5s' }}>
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-xl shadow-green-500/30">
-            <Shield className="h-10 w-10 text-white" />
-          </div>
-        </div>
-        {/* Decorative elements */}
-        <div className="absolute bottom-8 right-4 animate-float" style={{ animationDelay: '1.5s' }}>
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg text-white text-lg">
-            ⚠️
-          </div>
-        </div>
-        <div className="absolute top-12 left-1/2 animate-float" style={{ animationDelay: '2s' }}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-400 to-red-500 shadow-lg text-white text-sm">
-            🛑
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const features = [
   {
-    icon: BookOpen,
-    title: "Safety Courses",
-    description: "Structured learning modules on traffic signs, pedestrian safety, cycling, and more.",
-    color: "from-blue-500 to-blue-600",
-    shadow: "shadow-blue-500/20",
+    icon: MonitorPlay,
+    title: "Immersive Scenarios",
+    description: "Experience hyper-realistic road environments powered by next-gen 3D physics.",
+    color: "from-blue-600 to-indigo-700",
+    shadow: "shadow-blue-500/30",
   },
   {
     icon: Gamepad2,
-    title: "Mini Games",
-    description: "Test your knowledge with fun quizzes, reaction games, and road crossing simulators.",
-    color: "from-purple-500 to-purple-600",
-    shadow: "shadow-purple-500/20",
+    title: "Interactive Simulations",
+    description: "Navigate complex traffic logic, avoid hazards, and master vehicle control.",
+    color: "from-purple-600 to-fuchsia-700",
+    shadow: "shadow-purple-500/30",
   },
   {
     icon: Zap,
-    title: "Earn XP",
-    description: "Complete lessons and quizzes to earn experience points and level up your safety profile.",
-    color: "from-amber-500 to-orange-500",
-    shadow: "shadow-amber-500/20",
+    title: "Real-Time XP",
+    description: "Gain experience dynamically as you perform correct actions in our engine.",
+    color: "from-amber-600 to-orange-700",
+    shadow: "shadow-amber-500/30",
   },
   {
     icon: Trophy,
-    title: "Leaderboards",
-    description: "Compete with other learners and climb the rankings to become a road safety champion.",
-    color: "from-green-500 to-emerald-600",
-    shadow: "shadow-green-500/20",
+    title: "Global Leaderboards",
+    description: "Compete against thousands of players worldwide in high-stakes visual trials.",
+    color: "from-emerald-600 to-teal-700",
+    shadow: "shadow-emerald-500/30",
   },
   {
-    icon: Target,
-    title: "Track Progress",
-    description: "Monitor your learning journey with detailed progress tracking and streak counters.",
-    color: "from-rose-500 to-pink-600",
-    shadow: "shadow-rose-500/20",
+    icon: Cpu,
+    title: "Advanced AI",
+    description: "React to highly unpredictable, intelligently driven AI agents simulating real drivers.",
+    color: "from-rose-600 to-red-700",
+    shadow: "shadow-rose-500/30",
   },
   {
     icon: Star,
-    title: "Achievements",
-    description: "Unlock badges and achievements as you master different road safety topics.",
-    color: "from-cyan-500 to-teal-600",
-    shadow: "shadow-cyan-500/20",
+    title: "Dynamic Achievements",
+    description: "Unlock legendary visual badges and profile flairs as you conquer expert levels.",
+    color: "from-cyan-600 to-blue-700",
+    shadow: "shadow-cyan-500/30",
   },
 ];
 
 const howItWorks = [
-  { step: "1", title: "Sign Up", description: "Create your free account in seconds" },
-  { step: "2", title: "Learn", description: "Take interactive courses on road safety" },
-  { step: "3", title: "Practice", description: "Test knowledge with games and quizzes" },
-  { step: "4", title: "Level Up", description: "Earn XP and climb the leaderboard" },
+  { step: "01", title: "Initialize Profile", description: "Create your next-gen road safety ID" },
+  { step: "02", title: "Enter Simulation", description: "Launch directly into AAA 3D environments" },
+  { step: "03", title: "Survive & Learn", description: "React to dynamic hazards and perfect your skills" },
+  { step: "04", title: "Rank Up", description: "Climb the global tiers and unlock rewards" },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      {/* ── Hero Section ── */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-emerald-50/50 to-cyan-50 dark:from-green-950/20 dark:via-background dark:to-cyan-950/20" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-200/30 via-transparent to-transparent dark:from-green-800/10" />
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-indigo-500/30 overflow-hidden">
+      {/* ── Hyper-Realistic Hero Section ── */}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+        {/* Background Asset */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=2000&auto=format&fit=crop" 
+            alt="Hyper-realistic night driving" 
+            className="w-full h-full object-cover opacity-50 mix-blend-luminosity scale-105 animate-slow-pan" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-zinc-950/80 to-zinc-950 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+          
+          {/* Volumetric Lights */}
+          <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000" />
+          <div className="absolute bottom-0 right-1/4 w-[50vw] h-[50vw] bg-rose-600/10 rounded-full blur-[150px] mix-blend-screen" />
+        </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            {/* Text */}
-            <div className="text-center lg:text-left animate-fade-in">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-1.5 text-sm font-medium text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400">
-                <Shield className="h-4 w-4" />
-                Road Safety Education Platform
-              </div>
-              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl" style={{ fontFamily: 'var(--font-outfit)' }}>
-                Learn Road Safety.{" "}
-                <span className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                  Save Lives.
-                </span>
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl mx-auto lg:mx-0">
-                Master traffic rules, earn XP through gamified learning, and become a road safety champion.
-                Fun, interactive, and designed for young learners.
-              </p>
-              <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row lg:justify-start justify-center">
-                <SignedOut>
-                  <SignInButton mode="modal">
-                    <button className="group flex h-13 items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-8 text-base font-semibold text-white shadow-xl shadow-green-500/25 transition-all hover:shadow-green-500/40 hover:scale-105">
-                      Start Learning Road Safety
-                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </button>
-                  </SignInButton>
-                </SignedOut>
-                <SignedIn>
-                  <Link
-                    href="/dashboard"
-                    className="group flex h-13 items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-8 text-base font-semibold text-white shadow-xl shadow-green-500/25 transition-all hover:shadow-green-500/40 hover:scale-105"
-                  >
-                    Go to Dashboard
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </SignedIn>
-                <Link
-                  href="/dashboard/learn"
-                  className="flex h-13 items-center gap-2 rounded-full border border-border px-8 text-base font-semibold transition-all hover:bg-accent"
-                >
-                  Browse Courses
-                </Link>
-              </div>
-            </div>
-
-            {/* Illustration */}
-            <div className="hidden lg:block">
-              <HeroIllustration />
-            </div>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center mt-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-[0_4px_24px_-4px_rgba(255,255,255,0.05)] animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <span className="text-[10px] font-black tracking-widest text-zinc-300 uppercase">Unreal 5 Environment Enabled</span>
+          </div>
+          
+          <h1 className="text-6xl sm:text-7xl lg:text-9xl font-black tracking-tighter mb-6 leading-[0.9] animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <span className="bg-clip-text text-transparent bg-gradient-to-b from-white via-zinc-200 to-zinc-600 drop-shadow-lg">
+              ROAD SAFETY
+            </span>
+            <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500 drop-shadow-[0_0_40px_rgba(168,85,247,0.4)]">
+              REIMAGINED.
+            </span>
+          </h1>
+          
+          <p className="mt-8 max-w-2xl text-xl leading-relaxed text-zinc-400 sm:text-2xl font-medium drop-shadow-md animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            Immerse yourself in AAA-quality driving simulations. Master complex traffic dynamics and dynamic hazards in high-fidelity 3D environments.
+          </p>
+          
+          <div className="mt-12 flex flex-col items-center gap-6 sm:flex-row justify-center animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="group relative flex h-16 items-center gap-3 rounded-full bg-white px-10 text-lg font-black text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] overflow-hidden isolate">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                  INITIATE SIMULATION
+                  <Orbit className="h-6 w-6 transition-transform group-hover:rotate-180 duration-700" />
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <Link
+                href="/dashboard"
+                className="group relative flex h-16 items-center gap-3 rounded-full bg-white px-10 text-lg font-black text-black shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] overflow-hidden isolate"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                ENTER HUB
+                <Orbit className="h-6 w-6 transition-transform group-hover:rotate-180 duration-700" />
+              </Link>
+            </SignedIn>
+            <Link
+              href="/dashboard/games/roadsafety"
+              className="group flex h-16 items-center gap-3 rounded-full border border-white/20 bg-black/40 backdrop-blur-md px-10 text-lg font-bold text-white transition-all hover:bg-white/10 hover:border-white/40"
+            >
+              <MonitorPlay className="h-5 w-5 text-indigo-400 group-hover:text-pink-400 transition-colors" />
+              SPECTATE MODE
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
-      <section className="relative border-y border-border/50 bg-card/50">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4 stagger-children">
+      {/* ── Stats Telemetry ── */}
+      <section className="relative border-y border-white/5 bg-black/50 backdrop-blur-2xl z-20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {[
-              { value: "10+", label: "Safety Courses", icon: BookOpen },
-              { value: "50+", label: "Quiz Questions", icon: Target },
-              { value: "4", label: "Mini Games", icon: Gamepad2 },
-              { value: "3", label: "Skill Levels", icon: BarChart3 },
+              { value: "4K", label: "Resolution Assets", icon: MonitorPlay },
+              { value: "120", label: "FPS Physics", icon: Zap },
+              { value: "6", label: "AAA Simulations", icon: Gamepad2 },
+              { value: "3D", label: "Spatial Audio", icon: Target },
             ].map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center text-center">
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <stat.icon className="h-5 w-5" />
-                </div>
-                <div className="text-3xl font-extrabold text-foreground" style={{ fontFamily: 'var(--font-outfit)' }}>
+              <div key={stat.label} className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-default group">
+                <stat.icon className="h-6 w-6 text-indigo-400 mb-3 group-hover:text-pink-400 transition-colors drop-shadow-[0_0_10px_currentColor]" />
+                <div className="text-4xl font-black text-white tracking-tighter drop-shadow-lg mb-1">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-xs font-bold tracking-widest text-zinc-500 uppercase">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Features Grid ── */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl" style={{ fontFamily: 'var(--font-outfit)' }}>
-              Everything You Need to{" "}
-              <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-                Stay Safe
+      {/* ── Next-Gen Features Grid ── */}
+      <section className="py-24 sm:py-32 relative z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-900/50 to-zinc-950 pointer-events-none" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-black tracking-tighter sm:text-6xl uppercase">
+              Proprietary{" "}
+              <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                Technology
               </span>
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              A complete platform combining education, gamification, and community to make road safety fun and engaging.
+            <p className="mt-6 text-xl text-zinc-400 max-w-3xl mx-auto font-medium">
+              We leverage cutting-edge game engine architectures to deliver unmatched realism in educational simulation. 
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="group relative rounded-2xl border border-border/50 bg-card p-6 transition-all card-hover"
+                className="group relative rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:bg-white/[0.04] hover:-translate-y-2 hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] isolate overflow-hidden"
               >
-                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color} ${feature.shadow} shadow-lg transition-transform group-hover:scale-110`}>
-                  <feature.icon className="h-6 w-6 text-white" />
+                <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${feature.color} opacity-20 blur-3xl -z-10 group-hover:opacity-40 transition-opacity duration-700`} />
+                <div className={`mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} ${feature.shadow} shadow-lg ring-1 ring-white/20 group-hover:scale-110 transition-transform duration-500`}>
+                  <feature.icon className="h-6 w-6 text-white drop-shadow-md" />
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-foreground">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+                <h3 className="mb-3 text-2xl font-black text-white tracking-tight uppercase"><Sparkles className="inline-block w-4 h-4 mr-2 text-zinc-500" />{feature.title}</h3>
+                <p className="text-base font-medium leading-relaxed text-zinc-400">{feature.description}</p>
+                <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${feature.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="py-20 sm:py-28 bg-gradient-to-b from-transparent via-accent/30 to-transparent">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl" style={{ fontFamily: 'var(--font-outfit)' }}>
-              How It Works
+      {/* ── Operational Protocol (How It Works) ── */}
+      <section className="py-24 sm:py-32 relative bg-black border-y border-white/5 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] bg-indigo-900/10 rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-white/5 border border-white/10 text-xs font-black tracking-widest text-zinc-400 uppercase">
+              <Navigation className="w-3 h-3" /> System Sequence
+            </div>
+            <h2 className="text-4xl font-black tracking-tighter sm:text-5xl uppercase text-white">
+              Operational Protocol
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Get started in just a few simple steps
-            </p>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 stagger-children">
-            {howItWorks.map((item) => (
-              <div key={item.step} className="relative text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-xl font-bold text-white shadow-lg shadow-green-500/25">
-                  {item.step}
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {howItWorks.map((item, index) => (
+              <div key={item.step} className="relative text-center group">
+                <div className="hidden lg:block absolute top-12 left-1/2 w-full h-[2px] bg-gradient-to-r from-white/20 to-transparent -z-10 group-hover:from-indigo-500/50 transition-colors" />
+                <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2rem] border border-white/10 bg-zinc-900/80 backdrop-blur-xl text-3xl font-black text-white shadow-[0_0_30px_rgba(0,0,0,0.8)] group-hover:border-indigo-500/50 group-hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] transition-all duration-500 transform group-hover:-translate-y-2">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-500">
+                    {item.step}
+                  </span>
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
+                <h3 className="mb-3 text-xl font-black text-white uppercase tracking-tight">{item.title}</h3>
+                <p className="text-zinc-400 font-medium px-4">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Level System ── */}
-      <section className="py-20 sm:py-28">
+      {/* ── Tier System ── */}
+      <section className="py-24 sm:py-32 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl" style={{ fontFamily: 'var(--font-outfit)' }}>
-              Level Up Your Safety Knowledge
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-black tracking-tighter sm:text-5xl text-white uppercase">
+              Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Tier System</span>
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Progress through three traffic-light levels as you learn and earn XP
-            </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-3 stagger-children">
+          <div className="grid gap-8 sm:grid-cols-3">
             {[
-              { level: "RED", range: "0 – 499 XP", icon: "🔴", title: "Beginner", description: "Start your road safety journey. Learn the basics of traffic signs and pedestrian rules.", color: "from-red-500 to-rose-600", border: "border-red-200 dark:border-red-800" },
-              { level: "YELLOW", range: "500 – 1499 XP", icon: "🟡", title: "Intermediate", description: "Dive deeper into cycling safety, driving basics, and hazard awareness.", color: "from-amber-500 to-yellow-500", border: "border-amber-200 dark:border-amber-800" },
-              { level: "GREEN", range: "1500+ XP", icon: "🟢", title: "Expert", description: "Master advanced topics, ace all quizzes, and dominate the leaderboard.", color: "from-green-500 to-emerald-600", border: "border-green-200 dark:border-green-800" },
+              { level: "BRONZE", range: "0 – 499 SR", title: "Rookie Driver", description: "Basic simulation access. Standard hazard perception metrics active.", color: "from-amber-700 to-amber-900", border: "border-amber-900/50", glow: "shadow-amber-900/20" },
+              { level: "SILVER", range: "500 – 1499 SR", title: "Pro Operator", description: "Advanced physics enabled. Wet weather conditions and complex intersections unlocked.", color: "from-zinc-400 to-zinc-600", border: "border-zinc-500/50", glow: "shadow-zinc-500/20" },
+              { level: "GOLD", range: "1500+ SR", title: "Elite Navigator", description: "Full sensory overload. Expert traffic logic, zero margin for error.", color: "from-yellow-400 to-yellow-600", border: "border-yellow-500/50", glow: "shadow-yellow-500/20" },
             ].map((level) => (
-              <div key={level.level} className={`rounded-2xl border ${level.border} bg-card p-8 text-center card-hover`}>
-                <div className="mx-auto mb-4 text-5xl">{level.icon}</div>
-                <div className={`mx-auto mb-3 inline-block rounded-full bg-gradient-to-r ${level.color} px-4 py-1 text-xs font-bold text-white uppercase tracking-wider`}>
-                  {level.level} Level
+              <div key={level.level} className={`relative rounded-[2rem] border ${level.border} bg-zinc-950 p-10 text-center shadow-2xl ${level.glow} transition-all duration-500 hover:-translate-y-4 hover:shadow-[0_20px_50px_rgba(0,0,0,1)] overflow-hidden group`}>
+                <div className={`absolute inset-0 bg-gradient-to-b ${level.color} opacity-5 group-hover:opacity-10 transition-opacity`} />
+                
+                <div className={`mx-auto mb-6 inline-block rounded-full bg-gradient-to-r ${level.color} px-6 py-1.5 text-xs font-black text-black uppercase tracking-widest shadow-lg`}>
+                  {level.level} ELO
                 </div>
-                <h3 className="mb-2 text-xl font-bold text-foreground">{level.title}</h3>
-                <p className="mb-3 text-sm text-muted-foreground">{level.description}</p>
-                <p className="text-xs font-semibold text-muted-foreground">{level.range}</p>
+                <h3 className="mb-4 text-3xl font-black text-white tracking-tighter">{level.title}</h3>
+                <p className="mb-6 text-zinc-400 font-medium leading-relaxed">{level.description}</p>
+                <div className="mt-auto px-4 py-3 rounded-xl bg-black/50 border border-white/5 font-mono text-sm font-bold text-zinc-300">
+                  {level.range}
+                </div>
               </div>
             ))}
           </div>
@@ -279,36 +251,46 @@ export default function Home() {
       </section>
 
       {/* ── CTA Section ── */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 p-10 text-center text-white shadow-2xl shadow-green-500/20 sm:p-16">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/3 -translate-y-1/3 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute bottom-0 left-0 h-40 w-40 -translate-x-1/3 translate-y-1/3 rounded-full bg-white/10 blur-3xl" />
+      <section className="py-24 sm:py-32 border-t border-white/5 relative overflow-hidden bg-black">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1463620695885-b1a8f906e00c?q=80&w=2000&auto=format&fit=crop" 
+            alt="Racing background" 
+            className="w-full h-full object-cover opacity-30 mix-blend-luminosity" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950 mix-blend-multiply" />
+        </div>
+
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-zinc-950/80 backdrop-blur-2xl p-12 text-center text-white shadow-[0_0_100px_rgba(0,0,0,1)] sm:p-20">
+            <div className="absolute top-0 right-0 h-[500px] w-[500px] translate-x-1/3 -translate-y-1/3 rounded-full bg-indigo-600/20 blur-[100px]" />
+            <div className="absolute bottom-0 left-0 h-[500px] w-[500px] -translate-x-1/3 translate-y-1/3 rounded-full bg-pink-600/20 blur-[100px]" />
 
             <div className="relative">
-              <h2 className="text-3xl font-extrabold sm:text-4xl" style={{ fontFamily: 'var(--font-outfit)' }}>
-                Ready to Make Roads Safer?
+              <h2 className="text-5xl font-black sm:text-7xl tracking-tighter uppercase mb-6 leading-none">
+                Commence <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-pink-500">Operation</span>
               </h2>
-              <p className="mt-4 text-lg text-green-50 max-w-xl mx-auto">
-                Join Wayyat today and start your road safety journey. It&apos;s fun, free, and could save lives.
+              <p className="mt-6 text-xl text-zinc-300 max-w-2xl mx-auto font-medium">
+                The servers are online. The engines are primed. Join the most advanced road safety simulation platform today.
               </p>
-              <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <div className="mt-12 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <button className="group flex h-13 items-center gap-2 rounded-full bg-white px-8 text-base font-bold text-green-600 shadow-xl transition-all hover:bg-green-50 hover:scale-105">
-                      Get Started Free
-                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    <button className="group relative flex h-16 items-center gap-3 rounded-full bg-white px-10 text-xl font-black text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                      LINK PROFILE
+                      <Zap className="h-6 w-6 text-black fill-current" />
                     </button>
                   </SignInButton>
                 </SignedOut>
                 <SignedIn>
                   <Link
                     href="/dashboard"
-                    className="group flex h-13 items-center gap-2 rounded-full bg-white px-8 text-base font-bold text-green-600 shadow-xl transition-all hover:bg-green-50 hover:scale-105"
+                    className="group relative flex h-16 items-center gap-3 rounded-full bg-white px-10 text-xl font-black text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] overflow-hidden"
                   >
-                    Go to Dashboard
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    PROCEED TO HUB
+                    <Zap className="h-6 w-6 text-black fill-current" />
                   </Link>
                 </SignedIn>
               </div>

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Gauge, Shield, Clock, MapPin, Zap } from 'lucide-react';
+import { ArrowLeft, Trophy, Gauge, Shield, Clock, MapPin, Zap, AlertTriangle, Crosshair, ChevronRight } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sky, Environment } from '@react-three/drei';
+import { Sky, Environment, ContactShadows, Cloud, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -76,7 +76,7 @@ const stateRef = {
   xp: 0,
   violations: 0,
   timeRemaining: 300,
-  mission: 'Park in marked spots to earn XP!',
+  mission: 'Secure parking coordinates to extract XP.',
   parkTimer: 0,
 };
 
@@ -89,15 +89,10 @@ function RemoteCar({ data }: { data: PlayerState }) {
 
   useFrame(() => {
     if (groupRef.current) {
-      // Interpolate for smooth multiplayer rendering
       groupRef.current.position.lerp(new THREE.Vector3(data.x, 0, data.z), 0.3);
-      
-      // Slerp rotation
       const currentQuat = groupRef.current.quaternion;
       const targetQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, data.angle, 0));
       currentQuat.slerp(targetQuat, 0.3);
-
-      // Spin wheels based on speed
       wheelsRef.current.forEach(w => {
         if(w) w.rotation.x -= data.speed * 2;
       });
@@ -106,22 +101,14 @@ function RemoteCar({ data }: { data: PlayerState }) {
 
   return (
     <group ref={groupRef}>
-      {/* Name Tag */}
-      <mesh position={[0, 4, 0]}>
-         {/* Since we can't easily use pure HTML without causing layout thrash sometimes, we'll just color code or keep it simple */}
-         {/* but a small sphere indicator for another player works */}
-      </mesh>
-      
       <mesh position={[0, 0.5, 0]} castShadow>
         <boxGeometry args={[2.2, 0.8, 4.5]} />
-        <meshStandardMaterial color={data.color || "#3b82f6"} roughness={0.3} metalness={0.6} />
+        <meshStandardMaterial color={data.color || "#3b82f6"} roughness={0.2} metalness={0.8} />
       </mesh>
       <mesh position={[0, 1.2, -0.2]} castShadow>
         <boxGeometry args={[1.8, 0.7, 2.2]} />
-        <meshStandardMaterial color="#1f1f1f" roughness={0.1} metalness={0.9} transparent opacity={0.8} />
+        <meshStandardMaterial color="#000" roughness={0.1} metalness={0.9} transparent opacity={0.9} />
       </mesh>
-      
-      {/* Wheels */}
       {[[-1.2, 0.4, 1.4], [1.2, 0.4, 1.4], [-1.2, 0.4, -1.4], [1.2, 0.4, -1.4]].map((pos, i) => (
         <group key={i} position={pos as [number,number,number]} ref={el => { if(el) wheelsRef.current[i] = el; }}>
           <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -148,7 +135,7 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
     angle: Math.PI, 
     pos: new THREE.Vector3(0, 0, 0),
     parkedSpot: null as string | null,
-    carColor: `#${Math.floor(Math.random()*16777215).toString(16)}` // Random color for this session
+    carColor: `#${Math.floor(Math.random()*16777215).toString(16)}`
   });
 
   const keys = useRef<{ [key: string]: boolean }>({});
@@ -169,7 +156,6 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
 
     const data = carData.current;
     
-    // Gamepad
     let gpX = 0; let gpY = 0;
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = gamepads[0];
@@ -224,8 +210,8 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
     // MULTIPLAYER CAR COLLISION
     for (const rp of remotePlayers) {
        const dist = Math.hypot(data.pos.x - rp.x, data.pos.z - rp.z);
-       if (dist < 3.5) { // Crash!
-          data.speed *= -1.2; // Bounce back hard
+       if (dist < 3.5) {
+          data.speed *= -1.2;
           data.pos.x -= Math.sin(data.angle) * 0.5;
           data.pos.z -= Math.cos(data.angle) * 0.5;
           collision = true;
@@ -236,9 +222,9 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
     if (collision) {
        if (Math.abs(data.speed) > 0.1) {
          stateRef.violations++;
-         stateRef.mission = "CRASH! -XP Penalty!";
+         stateRef.mission = "[WARNING] HULL INTEGRITY COMPROMISED: -5 XP";
          stateRef.xp = Math.max(0, stateRef.xp - 5);
-         setTimeout(() => { if(stateRef.mission.includes("CRASH")) stateRef.mission = "Drive carefully." }, 2000);
+         setTimeout(() => { if(stateRef.mission.includes("HULL")) stateRef.mission = "Awaiting coordinate securing." }, 2000);
        }
     }
 
@@ -253,8 +239,8 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
           data.parkedSpot = spotKey;
           stateRef.xp += 15;
           addXP(15);
-          stateRef.mission = `Perfect Parking! +15 XP`;
-          setTimeout(() => { stateRef.mission = "Find another parking spot!" }, 3000);
+          stateRef.mission = `[SUCCESS] Coordinates Secured: +15 XP`;
+          setTimeout(() => { stateRef.mission = "Locate next target." }, 3000);
         }
       }
     } else {
@@ -269,36 +255,45 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
     stateRef.speed = Math.abs(data.speed) * 150; 
     stateRef.gear = data.speed > 0.01 ? 'D' : data.speed < -0.01 ? 'R' : 'N';
 
-    // MULTIPLAYER SEND SYNC
-    // Send 10 times a second max to avoid flooding
     if (Math.random() < 0.5) {
       sendUpdate({ x: data.pos.x, z: data.pos.z, angle: data.angle, speed: data.speed, name: playerName, color: data.carColor });
     }
 
+    // Hyper-realistic dynamic camera pursuit
     const idealOffset = new THREE.Vector3(-Math.sin(data.angle) * 12, 6, -Math.cos(data.angle) * 12);
     const idealLookAt = new THREE.Vector3(data.pos.x + Math.sin(data.angle) * 10, data.pos.y, data.pos.z + Math.cos(data.angle) * 10);
-    camera.position.lerp(idealOffset.add(data.pos), 0.1);
-    camera.lookAt(idealLookAt);
+    // Add slight speed-based FOV push for adrenaline effect
+    camera.fov = THREE.MathUtils.lerp(camera.fov, 60 + (Math.abs(data.speed) * 30), 0.1);
+    camera.updateProjectionMatrix();
+    
+    camera.position.lerp(idealOffset.add(data.pos), 0.15);
+    // Smooth lookat
+    const currentLookAt = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).add(camera.position);
+    currentLookAt.lerp(idealLookAt, 0.15);
+    camera.lookAt(currentLookAt);
   });
 
   return (
     <group ref={groupRef}>
       <mesh position={[0, 0.5, 0]} castShadow>
         <boxGeometry args={[2.2, 0.8, 4.5]} />
-        <meshStandardMaterial color={carData.current.carColor} roughness={0.3} metalness={0.6} />
+        <meshStandardMaterial color={carData.current.carColor} roughness={0.2} metalness={0.8} />
       </mesh>
       <mesh position={[0, 1.2, -0.2]} castShadow>
         <boxGeometry args={[1.8, 0.7, 2.2]} />
-        <meshStandardMaterial color="#1f1f1f" roughness={0.1} metalness={0.9} transparent opacity={0.8} />
+        <meshStandardMaterial color="#050505" roughness={0.0} metalness={1.0} transparent opacity={0.9} />
       </mesh>
+      {/* Hyper-realistic Headlights/Taillights */}
       <mesh position={[-0.7, 0.5, 2.3]}>
         <boxGeometry args={[0.4, 0.3, 0.1]} />
-        <meshBasicMaterial color="#ffffee" />
+        <meshBasicMaterial color="#ffffff" />
       </mesh>
       <mesh position={[0.7, 0.5, 2.3]}>
         <boxGeometry args={[0.4, 0.3, 0.1]} />
-        <meshBasicMaterial color="#ffffee" />
+        <meshBasicMaterial color="#ffffff" />
       </mesh>
+      <pointLight position={[0, 0.5, 3]} color="#ffffff" intensity={2} distance={20} castShadow />
+
       <mesh position={[-0.7, 0.5, -2.3]}>
         <boxGeometry args={[0.5, 0.2, 0.1]} />
         <meshBasicMaterial color="#ff0000" />
@@ -310,12 +305,22 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
       
       {[[-1.2, 0.4, 1.4], [1.2, 0.4, 1.4], [-1.2, 0.4, -1.4], [1.2, 0.4, -1.4]].map((pos, i) => (
         <group key={i} position={pos as [number,number,number]} ref={el => { if(el) wheelsRef.current[i] = el; }}>
-          <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-            <cylinderGeometry args={[0.4, 0.4, 0.3, 16]} />
-            <meshStandardMaterial color="#111" roughness={0.9} />
+          <mesh rotation={[0, 0, Math.PI / 2]} castShadow shadow-bias={-0.001}>
+            <cylinderGeometry args={[0.45, 0.45, 0.35, 24]} />
+            <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
+          </mesh>
+          {/* Wheel Rims */}
+          <mesh rotation={[0, 0, Math.PI / 2]} position={[(pos[0]>0?0.18:-0.18),0,0]}>
+             <cylinderGeometry args={[0.3, 0.3, 0.05, 12]} />
+             <meshStandardMaterial color="#ccc" metalness={0.8} roughness={0.2} />
           </mesh>
         </group>
       ))}
+      {/* Dynamic Fake Shadow directly under car */}
+      <mesh position={[0, 0.05, 0]} rotation={[-Math.PI/2, 0, 0]}>
+        <planeGeometry args={[2.5, 5]} />
+        <meshBasicMaterial color="#000" opacity={0.5} transparent />
+      </mesh>
     </group>
   );
 }
@@ -333,26 +338,31 @@ function CityEnvironment() {
       const z = (row - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
 
       if (tile === 2) {
-        const height = 10 + Math.random() * 20;
+        const height = 15 + Math.random() * 30; // Taller buildings for AAA scale
         blocks.push(
           <mesh key={`${row}-${col}`} position={[x, height / 2, z]} castShadow receiveShadow>
             <boxGeometry args={[TILE_SIZE - 0.5, height, TILE_SIZE - 0.5]} />
-            <meshStandardMaterial color={`hsl(${Math.random()*360}, 15%, 40%)`} />
+            {/* Hyper-realistic dark glass building look */}
+            <meshStandardMaterial color={`hsl(${220 + Math.random()*20}, 20%, ${10 + Math.random()*15}%)`} metalness={0.8} roughness={0.2} />
           </mesh>
         );
       } else if (tile === 3) {
+        // Glowing Parking Spot
         blocks.push(
           <mesh key={`park-${row}-${col}`} position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[TILE_SIZE - 1, TILE_SIZE - 1]} />
-            <meshBasicMaterial color="#22c55e" opacity={0.3} transparent />
+            <meshBasicMaterial color="#10b981" opacity={0.2} transparent />
           </mesh>
         );
         blocks.push(
           <mesh key={`parkline-${row}-${col}`} position={[x, 0.03, z]} rotation={[-Math.PI / 2, 0, 0]}>
-             <ringGeometry args={[TILE_SIZE/2 - 0.5, TILE_SIZE/2 - 0.1, 4]} />
-             <meshBasicMaterial color="#ffffff" />
+             <ringGeometry args={[TILE_SIZE/2 - 0.5, TILE_SIZE/2 - 0.1, 32]} />
+             <meshBasicMaterial color="#34d399" />
           </mesh>
         );
+        blocks.push(
+          <pointLight key={`parklight-${row}-${col}`} position={[x, 1, z]} distance={10} intensity={0.5} color="#34d399" />
+        )
       }
     }
   }
@@ -360,19 +370,21 @@ function CityEnvironment() {
   return (
     <group>
       {blocks}
+      {/* Wet Road Material */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[MAP_SIZE * TILE_SIZE, MAP_SIZE * TILE_SIZE]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.8} />
+        <meshStandardMaterial color="#111" roughness={0.1} metalness={0.5} />
       </mesh>
+      {/* Grid Decals / Grass replacements with sleek dark concrete */}
       {currentMap.map((rowArr: number[], row: number) => 
         rowArr.map((tile: number, col: number) => {
           if (tile === 0 || tile === 2) { 
             const x = (col - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
             const z = (row - MAP_SIZE / 2) * TILE_SIZE + TILE_SIZE / 2;
             return (
-              <mesh key={`grass-${row}-${col}`} position={[x, 0.01, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <mesh key={`sidewalk-${row}-${col}`} position={[x, 0.1, z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
-                <meshStandardMaterial color="#3d6b40" roughness={1} />
+                <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
               </mesh>
             );
           }
@@ -408,27 +420,34 @@ function HUD({ onQuit, connectionsCount }: { onQuit: () => void, connectionsCoun
 
   if (hudData.time <= 0) {
     return (
-      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-        <div className="bg-card border border-border/50 rounded-3xl p-8 max-w-sm w-full text-center space-y-6 shadow-2xl">
-          <div className="text-6xl mb-4">🏁</div>
-          <h2 className="text-3xl font-extrabold font-outfit text-foreground">Time's Up!</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-accent/50 rounded-2xl p-4">
-              <p className="text-3xl font-black text-amber-500">+{hudData.xp}</p>
-              <p className="text-xs text-muted-foreground uppercase font-bold mt-1">XP Earned</p>
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl animate-fade-in font-sans">
+        <div className="bg-zinc-950/80 border border-white/10 rounded-[2rem] p-10 max-w-lg w-full text-center shadow-[0_0_80px_rgba(0,0,0,1)] relative overflow-hidden isolate">
+          <div className="absolute top-0 right-1/4 w-[300px] h-[300px] bg-indigo-600/20 blur-[100px] -z-10" />
+          <div className="text-6xl mb-6 drop-shadow-lg">🏁</div>
+          <h2 className="text-4xl font-black text-white tracking-tighter uppercase mb-2">Simulation Concluded</h2>
+          
+          <div className="grid grid-cols-2 gap-4 my-8">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-inner relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"/>
+              <p className="text-5xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">+{hudData.xp}</p>
+              <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">XP GAINED</p>
             </div>
-            <div className="bg-accent/50 rounded-2xl p-4">
-              <p className={`text-3xl font-black ${hudData.violations === 0 ? 'text-green-500' : 'text-red-400'}`}>{hudData.violations}</p>
-              <p className="text-xs text-muted-foreground uppercase font-bold mt-1">Collisions</p>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-inner relative overflow-hidden group">
+               <div className="absolute inset-0 bg-gradient-to-t from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"/>
+              <p className={`text-5xl font-black ${hudData.violations === 0 ? 'text-zinc-500' : 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`}>{hudData.violations}</p>
+              <p className="text-xs text-zinc-400 uppercase font-black tracking-widest mt-2">INFRACTIONS</p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">XP has been saved to your account automatically.</p>
-          <div className="pt-2 flex flex-col gap-3">
-            <button onClick={() => window.location.reload()} className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg hover:opacity-90">
-              Play Again
+          
+          <p className="text-sm text-zinc-500 font-medium mb-8">Data synced to main server. ELO updated.</p>
+          
+          <div className="flex flex-col gap-3">
+            <button onClick={() => window.location.reload()} className="group relative w-full py-5 rounded-2xl font-black tracking-widest text-black uppercase bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:scale-[1.02] transition-all overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+               RESTART SIMULATION
             </button>
-            <button onClick={onQuit} className="w-full py-4 rounded-xl font-bold border border-border text-foreground hover:bg-accent">
-              Back to Games
+            <button onClick={onQuit} className="w-full py-5 rounded-2xl font-bold uppercase tracking-widest text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5 transition-colors">
+               ABORT TO HUB
             </button>
           </div>
         </div>
@@ -437,59 +456,74 @@ function HUD({ onQuit, connectionsCount }: { onQuit: () => void, connectionsCoun
   }
 
   return (
-    <div className="absolute inset-0 z-10 pointer-events-none p-4 sm:p-6 flex flex-col justify-between" style={{ fontFamily: 'var(--font-outfit), sans-serif' }}>
-      <div className="flex justify-between items-start pointer-events-auto">
-        <button onClick={onQuit} className="bg-black/60 backdrop-blur-md border border-white/10 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-bold hover:bg-black/80 transition-colors shadow-lg">
-          <ArrowLeft className="w-5 h-5" /> Quit
+    <div className="absolute inset-0 z-10 pointer-events-none p-6 sm:p-8 flex flex-col justify-between font-sans overflow-hidden">
+      {/* Vignette Overlay */}
+      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
+
+      {/* Top HUD */}
+      <div className="flex justify-between items-start pointer-events-auto relative z-20">
+        <button onClick={onQuit} className="group bg-zinc-950/80 backdrop-blur-xl border border-white/10 text-white px-5 py-3 rounded-2xl flex items-center gap-3 font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+          <ArrowLeft className="w-4 h-4" /> ABORT
         </button>
 
         <div className="flex gap-4">
-          <div className="bg-black/60 backdrop-blur-md border border-white/10 text-white px-4 py-3 rounded-2xl flex flex-col items-center justify-center shadow-lg">
-             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 animate-pulse text-green-400">Multiplayer</span>
-             <span className="text-sm font-black">{connectionsCount} Online</span>
+          <div className="bg-zinc-950/80 backdrop-blur-xl border border-indigo-500/30 text-white px-5 py-3 rounded-2xl flex flex-col items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)] min-w-[120px]">
+             <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> SYNC
+             </span>
+             <span className="text-lg font-black">{connectionsCount} OPR</span>
           </div>
 
-          <div className="bg-black/60 backdrop-blur-md border border-white/10 text-white px-6 py-3 rounded-2xl flex flex-col items-center justify-center shadow-lg min-w-[140px]">
-            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Time Left</span>
-            <span className={`text-2xl font-black ${hudData.time < 30 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+          <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/10 text-white px-6 py-3 rounded-2xl flex flex-col items-end justify-center shadow-[0_4px_20px_rgba(0,0,0,0.5)] min-w-[140px]">
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">T-MINUS</span>
+            <span className={`text-2xl font-black tracking-tighter ${hudData.time < 30 ? 'text-red-500 animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'text-white'}`}>
               {formatTime(hudData.time)}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="self-center bg-black/70 backdrop-blur-md border border-amber-500/30 px-8 py-3 rounded-full flex items-center gap-3 shadow-2xl mt-4 max-w-lg text-center animate-fade-in">
-        <Shield className="w-5 h-5 text-amber-500" />
-        <span className="text-white font-bold text-sm tracking-wide">{hudData.mission}</span>
+      {/* Mission Objective Overlay */}
+      <div className="self-center bg-zinc-950/80 backdrop-blur-xl border border-emerald-500/30 px-8 py-4 rounded-full flex items-center gap-4 shadow-[0_0_30px_rgba(16,185,129,0.2)] mt-6 max-w-2xl text-center animate-fade-in relative z-20 pointer-events-auto">
+        <Crosshair className="w-5 h-5 text-emerald-400 animate-pulse" />
+        <span className="text-white font-bold text-sm tracking-widest uppercase">{hudData.mission}</span>
       </div>
 
       <div className="flex-1" />
 
-      <div className="flex justify-between items-end pointer-events-auto">
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-5 flex items-center gap-6 shadow-2xl min-w-[200px]">
-          <div className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-4 relative" style={{ borderColor: hudData.speed > 80 ? '#ef4444' : '#3b82f6' }}>
-             <span className="text-3xl font-black text-white">{Math.round(hudData.speed)}</span>
-             <span className="text-[10px] uppercase font-bold text-gray-400">KM/H</span>
+      {/* Bottom HUD */}
+      <div className="flex justify-between items-end pointer-events-auto relative z-20">
+        
+        {/* Speedometer Telemetry */}
+        <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 flex items-center gap-6 shadow-[0_0_40px_rgba(0,0,0,0.8)] min-w-[240px]">
+          <div className="relative flex flex-col items-center justify-center w-24 h-24 rounded-full border-[6px]" style={{ borderColor: hudData.speed > 80 ? '#ef4444' : 'rgba(255,255,255,0.1)' }}>
+             <div className="absolute inset-0 rounded-full border-[6px] border-indigo-500 transition-all duration-300" style={{ clipPath: `inset(0 0 ${100 - (hudData.speed/150)*100}% 0)` }} />
+             <span className="text-3xl font-black text-white z-10">{Math.round(hudData.speed)}</span>
+             <span className="text-[9px] uppercase font-black tracking-widest text-zinc-500 z-10">KPH</span>
           </div>
-          <div className="flex flex-col gap-2">
-            <div className={`text-2xl font-black ${hudData.gear === 'D' ? 'text-green-400' : hudData.gear === 'R' ? 'text-red-400' : 'text-gray-400'}`}>
+          <div className="flex flex-col gap-3">
+            <div className={`text-3xl font-black tracking-tighter ${hudData.gear === 'D' ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]' : hudData.gear === 'R' ? 'text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.5)]' : 'text-zinc-600'}`}>
               {hudData.gear}
             </div>
-            <div className="text-xs font-bold text-gray-400 bg-white/10 px-2 py-1 rounded">
-              AUTO
+            <div className="text-[10px] font-black tracking-widest text-zinc-950 bg-white px-2 py-1 rounded">
+              A / T
             </div>
           </div>
         </div>
 
-        <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-5 flex flex-col items-end gap-1 shadow-2xl min-w-[180px]">
-          <div className="flex items-center gap-2 text-amber-500 mb-1">
-            <Zap className="w-5 h-5" />
-            <span className="text-xs uppercase font-extrabold tracking-widest text-white/50">Total XP</span>
+        {/* Tactical Info */}
+        <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 flex flex-col items-end gap-2 shadow-[0_0_40px_rgba(0,0,0,0.8)] min-w-[200px]">
+          <div className="flex items-center gap-2 text-indigo-400 mb-2">
+            <Zap className="w-4 h-4 fill-current" />
+            <span className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Yield XP</span>
           </div>
-          <div className="text-4xl font-black text-white">{hudData.xp}</div>
-          <div className={`mt-2 text-xs font-bold px-2 py-1 rounded w-full text-right ${hudData.violations > 0 ? 'bg-red-500/20 text-red-400' : 'text-gray-500'}`}>
-            Collisions: {hudData.violations}
-          </div>
+          <div className="text-5xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">{hudData.xp}</div>
+          
+          {hudData.violations > 0 && (
+            <div className="mt-2 text-[10px] font-black tracking-widest px-3 py-1.5 rounded bg-red-500/20 text-red-500 uppercase border border-red-500/30 w-full text-right animate-pulse">
+              DMG: {hudData.violations}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -502,13 +536,13 @@ function HUD({ onQuit, connectionsCount }: { onQuit: () => void, connectionsCoun
 export default function RoadSafety3DGame() {
   const [phase, setPhase] = useState<'lobby' | 'playing'>('lobby');
   const { user } = useUser();
-  const playerName = user?.firstName || 'Guest';
+  const playerName = user?.firstName || 'Guest OP';
 
   const handleCustomEvent = (data: any) => {
     if (data.type === 'START_1V1') {
       currentMap = data.payload.map;
       stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
-      stateRef.timeRemaining = 300; stateRef.mission = 'Find the green parking spots!';
+      stateRef.timeRemaining = 300; stateRef.mission = 'Secure parking coordinates to extract XP.';
       stateRef.parkTimer = 0;
       setPhase('playing');
     }
@@ -521,61 +555,94 @@ export default function RoadSafety3DGame() {
 
   if (phase === 'lobby') {
     return (
-      <div className="max-w-2xl mx-auto space-y-8 py-10 px-4 animate-fade-in font-outfit">
-        <Link href="/dashboard/games" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors bg-accent/50 px-4 py-2 rounded-full">
-          <ArrowLeft className="h-4 w-4" /> Exit
-        </Link>
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-2xl shadow-blue-500/30 text-5xl mb-2">
-            🏎️
-          </div>
-          <h1 className="text-5xl font-black tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>City Drive 3D</h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            Experience realistic driving, find parking spots, and navigate the city blocks perfectly to earn XP. 
-            <strong className="text-primary block mt-2">✨ MULTIPLAYER ENABLED ✨</strong>
-          </p>
+      <div className="relative w-full h-[85vh] rounded-[2.5rem] overflow-hidden bg-black flex items-center justify-center font-sans shadow-2xl border border-white/10 group isolate">
+        {/* AAA Lobby Background */}
+        <div className="absolute inset-0 z-0 bg-black">
+          <img 
+            src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2000&auto=format&fit=crop" 
+            alt="City Engine" 
+            className="w-full h-full object-cover opacity-60 mix-blend-luminosity scale-105 group-hover:scale-100 transition-transform duration-1000" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[2px]" />
+          
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[150px] mix-blend-screen animate-pulse duration-10000" />
         </div>
-        <button
-          onClick={() => {
-            stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
-            stateRef.timeRemaining = 300; stateRef.mission = 'Find the green parking spots!';
-            stateRef.parkTimer = 0;
-            currentMap = generateRandomCityMap();
-            sendCustomEvent({ type: 'START_1V1', payload: { map: currentMap } });
-            setPhase('playing');
-          }}
-          className="w-full rounded-2xl bg-foreground text-background py-5 font-black text-xl shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all"
-        >
-          START ENGINE SOLO
-        </button>
-        {remotePlayers.length > 0 && (
-          <div className="fixed bottom-10 left-10 pointer-events-auto animate-fade-in z-50">
-            <button 
-              onClick={() => {
-                stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
-                stateRef.timeRemaining = 300; stateRef.mission = 'Find the green parking spots!';
-                stateRef.parkTimer = 0;
-                currentMap = generateRandomCityMap();
-                sendCustomEvent({ type: 'START_1V1', payload: { map: currentMap } });
-                setPhase('playing');
-              }}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 border-[3px] border-white/20 text-white font-black text-2xl px-8 py-5 rounded-3xl shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:scale-105 transition-transform flex items-center justify-center gap-3">
-              <span className="animate-pulse">✨</span> PLAYER JOINED! PLAY 1V1 MAP <span className="animate-pulse">✨</span>
-            </button>
+
+        <div className="relative z-10 p-10 max-w-4xl w-full flex flex-col items-start justify-center text-left h-full">
+          <Link href="/dashboard/games" className="absolute top-10 left-10 inline-flex items-center gap-2 text-[10px] font-black tracking-widest text-zinc-400 hover:text-white transition-colors bg-white/5 border border-white/10 backdrop-blur-xl px-5 py-3 rounded-full hover:bg-white/10 uppercase">
+            <ArrowLeft className="h-4 w-4" /> Retreat to Hub
+          </Link>
+          
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-md shadow-inner">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+            <span className="text-[10px] font-black tracking-widest text-indigo-300 uppercase">Engine Status: Nominal</span>
           </div>
-        )}
+
+          <h1 className="text-6xl sm:text-[8rem] leading-[0.8] font-black tracking-tighter mb-8 uppercase text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+            CITY <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500 filter drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]">DRIVE</span> 3D
+          </h1>
+          
+          <p className="text-lg text-zinc-300 max-w-xl font-medium mb-12 drop-shadow-md border-l-2 border-indigo-500 pl-6">
+            Initialize the hyper-realistic simulation. Navigate volumetric city grids, secure parking parameters, and avoid collision vectors.
+            <strong className="text-emerald-400 flex items-center mt-4 text-xs tracking-widest uppercase"><Zap className="w-3 h-3 justify-center mr-2"/> MULTIPLAYER SYNC ENABLED</strong>
+          </p>
+
+          <button
+            onClick={() => {
+              stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
+              stateRef.timeRemaining = 300; stateRef.mission = 'Secure parking coordinates to extract XP.';
+              stateRef.parkTimer = 0;
+              currentMap = generateRandomCityMap();
+              sendCustomEvent({ type: 'START_1V1', payload: { map: currentMap } });
+              setPhase('playing');
+            }}
+            className="group relative flex h-16 w-full max-w-sm items-center justify-center gap-3 rounded-xl bg-white px-10 text-xl font-black text-black shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all hover:scale-[1.03] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+            DEPLOY PROTOCOL
+            <ChevronRight className="w-6 h-6 delay-100 transition-transform group-hover:translate-x-2" />
+          </button>
+          
+          {remotePlayers.length > 0 && (
+            <div className="absolute bottom-10 right-10 pointer-events-auto animate-fade-in z-50">
+              <button 
+                onClick={() => {
+                  stateRef.speed = 0; stateRef.gear = 'N'; stateRef.xp = 0; stateRef.violations = 0;
+                  stateRef.timeRemaining = 300; stateRef.mission = 'Secure parking coordinates to extract XP.';
+                  stateRef.parkTimer = 0;
+                  currentMap = generateRandomCityMap();
+                  sendCustomEvent({ type: 'START_1V1', payload: { map: currentMap } });
+                  setPhase('playing');
+                }}
+                className="bg-indigo-600 border border-indigo-400/50 text-white font-black text-sm tracking-widest uppercase px-8 py-5 rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.5)] hover:scale-105 transition-all flex items-center justify-center gap-3">
+                <span className="w-2 h-2 bg-white rounded-full animate-ping" />
+                INITIATE PVP INSTANCE ({remotePlayers.length})
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
+  // Active Gameplay Phase
   return (
-    <div className="relative w-full h-[85vh] rounded-3xl overflow-hidden bg-black shadow-2xl border border-border/50">
-      <Canvas shadows camera={{ position: [0, 10, 10], fov: 60 }}>
-        <color attach="background" args={['#87ceeb']} />
-        <ambientLight intensity={0.4} />
-        <directionalLight castShadow position={[50, 50, 20]} intensity={1.2} shadow-mapSize={[2048, 2048]} />
-        <Sky sunPosition={[100, 20, 100]} turbidity={1} rayleigh={0.5} />
-        <Environment preset="city" />
+    <div className="relative w-full h-[85vh] rounded-[2.5rem] overflow-hidden bg-black shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 group">
+      <Canvas shadows camera={{ position: [0, 10, 10], fov: 60 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.8 }}>
+        <fog attach="fog" args={['#0a0a0a', 20, 100]} />
+        <color attach="background" args={['#0a0a0a']} />
+        
+        {/* Hyper-realistic Studio/Night Lighting */}
+        <ambientLight intensity={0.1} />
+        <directionalLight castShadow position={[50, 100, 20]} intensity={1.5} color="#b3d4ff" shadow-mapSize={[2048, 2048]} shadow-camera-far={200} shadow-camera-left={-50} shadow-camera-right={50} shadow-camera-top={50} shadow-camera-bottom={-50} />
+        <pointLight position={[0, 50, 0]} intensity={2} color="#f9a8d4" distance={200} />
+        
+        {/* Dynamic night sky environment */}
+        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+        <Environment preset="night" />
 
         <CityEnvironment />
         
@@ -588,4 +655,8 @@ export default function RoadSafety3DGame() {
       <HUD onQuit={() => setPhase('lobby')} connectionsCount={remotePlayers.length + 1} />
     </div>
   );
+}
+
+function Stars(props: any) {
+  return <Sparkles scale={100} size={2} color="#ffffff" {...props} />
 }
