@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, Heart, ShieldAlert, ChevronRight } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, Sparkles } from '@react-three/drei';
+import { Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -182,8 +182,9 @@ function GameScene({ onCrash, onTick, remotePlayers, sendUpdate, playerName, act
     
     // Dynamic Hyper-realistic Camera tracking
     // Speed adds FOV and pushes camera back slightly, shaking if invincible
-    camera.fov = THREE.MathUtils.lerp(camera.fov, 60 + scrollSpeed.current*15, 0.1);
-    camera.updateProjectionMatrix();
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    perspectiveCamera.fov = THREE.MathUtils.lerp(perspectiveCamera.fov, 60 + scrollSpeed.current*15, 0.1);
+    perspectiveCamera.updateProjectionMatrix();
 
     let shakeX = 0; let shakeY = 0;
     if (inv.current) { shakeX = (Math.random()-0.5)*1.5; shakeY = (Math.random()-0.5)*1.5; }
@@ -353,7 +354,7 @@ export default function HighwayRacer() {
         <directionalLight castShadow position={[40,50,0]} intensity={2} color="#818cf8" shadow-mapSize={[2048,2048]} shadow-camera-far={200} />
         <pointLight position={[0,10,0]} color="#f43f5e" intensity={2} distance={100} />
         
-        <Sparkles scale={200} size={2} color="#cbd5e1" radius={100} depth={100} count={5000} factor={6} saturation={0} fade speed={2} />
+        <Stars radius={100} depth={100} count={5000} factor={6} saturation={0} fade speed={2} />
         <Environment preset="night" />
         
         <GameScene onCrash={crash} onTick={tick} remotePlayers={remotePlayers} sendUpdate={sendUpdate} playerName={name} active={phase==='playing'}/>

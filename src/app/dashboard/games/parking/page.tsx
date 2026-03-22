@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Car, ShieldAlert, Zap, Clock, Target, Crosshair, ChevronRight } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sky, Environment, Sparkles } from '@react-three/drei';
+import { Sky, Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -341,7 +341,7 @@ export default function ParkingSimulator() {
         <directionalLight castShadow position={[-20,50,20]} intensity={2.0} color="#b3d4ff" shadow-mapSize={[2048,2048]}/>
         <pointLight position={[0,50,0]} intensity={1} color="#34d399" distance={100} />
         
-        <Sparkles scale={100} size={2} color="#ffffff" radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+        <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
         <Environment preset="night" />
         
         <LevelEnvironment mapData={mapData}/>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, AlertTriangle, ChevronRight, Activity } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Sparkles } from '@react-three/drei';
+import { Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -353,7 +353,7 @@ export default function TrafficController() {
         <ambientLight intensity={0.2} color="#475569" />
         <directionalLight castShadow position={[20,60,20]} intensity={2} color="#e0e7ff" shadow-mapSize={[2048,2048]} shadow-camera-far={150} shadow-camera-left={-30} shadow-camera-right={30} shadow-camera-top={30} shadow-camera-bottom={-30} />
         
-        <Sparkles scale={150} size={2} color="#94a3b8" radius={80} depth={50} count={2000} factor={3} saturation={0} fade speed={1} />
+        <Stars radius={80} depth={50} count={2000} factor={3} saturation={0} fade speed={1} />
         <Environment preset="night" />
 
         <Intersection nsLight={nsLight} ewLight={ewLight}/>

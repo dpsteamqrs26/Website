@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Trophy, Gauge, Shield, Clock, MapPin, Zap, AlertTriangle, Crosshair, ChevronRight } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sky, Environment, ContactShadows, Cloud, Sparkles } from '@react-three/drei';
+import { Sky, Environment, ContactShadows, Cloud, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -263,8 +263,9 @@ function Car({ onGameEnd, addXP, playerName, remotePlayers, sendUpdate }:
     const idealOffset = new THREE.Vector3(-Math.sin(data.angle) * 12, 6, -Math.cos(data.angle) * 12);
     const idealLookAt = new THREE.Vector3(data.pos.x + Math.sin(data.angle) * 10, data.pos.y, data.pos.z + Math.cos(data.angle) * 10);
     // Add slight speed-based FOV push for adrenaline effect
-    camera.fov = THREE.MathUtils.lerp(camera.fov, 60 + (Math.abs(data.speed) * 30), 0.1);
-    camera.updateProjectionMatrix();
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    perspectiveCamera.fov = THREE.MathUtils.lerp(perspectiveCamera.fov, 60 + (Math.abs(data.speed) * 30), 0.1);
+    perspectiveCamera.updateProjectionMatrix();
     
     camera.position.lerp(idealOffset.add(data.pos), 0.15);
     // Smooth lookat
@@ -655,8 +656,4 @@ export default function RoadSafety3DGame() {
       <HUD onQuit={() => setPhase('lobby')} connectionsCount={remotePlayers.length + 1} />
     </div>
   );
-}
-
-function Stars(props: any) {
-  return <Sparkles scale={100} size={2} color="#ffffff" {...props} />
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, Heart, Shield, Users, Crosshair, ChevronRight, TriangleAlert } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sky, Environment, Sparkles } from '@react-three/drei';
+import { Sky, Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -249,8 +249,9 @@ function PlayerController({
     const viewOffsetZ = 14;
     const viewOffsetY = 14;
     
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
     const camTarget = new THREE.Vector3(pos.current.x, viewOffsetY, pos.current.z + viewOffsetZ);
-    camera.position.lerp(camTarget, 0.1);
+    perspectiveCamera.position.lerp(camTarget, 0.1);
     
     // Smooth LookAt
     const targetLookAt = new THREE.Vector3(pos.current.x, 0, pos.current.z - 6);
@@ -507,7 +508,7 @@ export default function CrossingGame3D() {
         <directionalLight castShadow position={[30, 50, -20]} intensity={1.5} color="#e0e7ff" shadow-mapSize={[2048, 2048]} shadow-camera-far={150} shadow-camera-left={-30} shadow-camera-right={30} shadow-camera-top={30} shadow-camera-bottom={-30} />
         <pointLight position={[0,20,0]} intensity={2} color="#fbbf24" distance={50} />
 
-        <Sparkles scale={100} size={2} color="#cbd5e1" radius={80} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+        <Stars radius={80} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
         <Environment preset="night" />
 
         <RoadScene />

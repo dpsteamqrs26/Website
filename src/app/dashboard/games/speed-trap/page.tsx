@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Zap, AlertTriangle, Gauge, Crosshair, ChevronRight } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, Sparkles } from '@react-three/drei';
+import { Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { addGameXP } from '@/app/actions';
 import { useUser } from '@clerk/nextjs';
@@ -199,8 +199,9 @@ function PlayerCar({ zones, obstacles, onZonePass, onObstacleHit, remotePlayers,
     if(Math.random()<0.3) sendUpdate({x:posX.current,z:posZ.current,angle:angle.current,speed:speed.current,name:playerName,color:color.current});
 
     // AAA Dynamic Camera
-    camera.fov = THREE.MathUtils.lerp(camera.fov, 60 + speed.current*30, 0.1);
-    camera.updateProjectionMatrix();
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    perspectiveCamera.fov = THREE.MathUtils.lerp(perspectiveCamera.fov, 60 + speed.current*30, 0.1);
+    perspectiveCamera.updateProjectionMatrix();
 
     let shakeX = 0; let shakeY = 0;
     if(inv.current){ shakeX = (Math.random()-0.5)*1.0; shakeY = (Math.random()-0.5)*1.0; }
@@ -412,7 +413,7 @@ export default function SpeedTrap() {
         <directionalLight castShadow position={[20,40,-20]} intensity={1.5} color="#e0e7ff" shadow-mapSize={[2048,2048]} shadow-camera-far={200} />
         <pointLight position={[0,10,0]} color="#38bdf8" intensity={2} distance={100} />
         
-        <Sparkles scale={150} size={1} color="#cbd5e1" radius={80} depth={100} count={3000} factor={4} saturation={0} fade speed={2} />
+        <Stars radius={80} depth={100} count={3000} factor={4} saturation={0} fade speed={2} />
         <Environment preset="night" />
 
         <Road/>
