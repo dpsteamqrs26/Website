@@ -59,10 +59,10 @@ const howItWorks = [
 ];
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: "Home | Wayyat",
   description: "Welcome to Wayyat, the ultimate road safety education platform. Experience hyper-realistic 3D simulations, engage in interactive courses, and master traffic rules in a gamified environment.",
   openGraph: {
-    title: "Wayyat — Next-Gen Road Safety Education",
+    title: "Home | Wayyat",
     description: "Experience AAA-quality road safety simulations and master traffic dynamics in high-fidelity 3D environments.",
     images: [
       {

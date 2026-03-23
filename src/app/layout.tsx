@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://wayyat.ae", // Assuming .ae or similar, but using a generic one if unsure
+    url: "https://wayyat.vercel.app", // Assuming .ae or similar, but using a generic one if unsure
     siteName: "Wayyat",
     title: "Wayyat — Road Safety Education Platform",
     description: "Master road safety through immersive 3D simulations and gamified learning.",

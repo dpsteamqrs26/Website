@@ -102,10 +102,10 @@ const games = [
 ];
 
 export const metadata: Metadata = {
-  title: "Interactive Games & Simulations",
+  title: "Games | Wayyat",
   description: "Play immersive road safety games. From city driving simulations to precision parking challenges, master your skills in high-fidelity 3D environments.",
   openGraph: {
-    title: "Interactive Road Safety Games | Wayyat",
+    title: "Games | Wayyat",
     description: "Experience AAA-quality simulations and sharpen your driving reflexes in our immersive game hub.",
   },
 };

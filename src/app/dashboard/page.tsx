@@ -7,10 +7,10 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Dashboard | Wayyat",
   description: "Manage your road safety learning journey. Track your XP, view achievements, and access simulations and courses from your personalized dashboard.",
   openGraph: {
-    title: "Your Road Safety Dashboard | Wayyat",
+    title: "Dashboard | Wayyat",
     description: "Track your progress and master road safety in our immersive learning hub.",
   },
 };
