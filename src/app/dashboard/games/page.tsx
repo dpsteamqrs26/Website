@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Metadata } from "next";
 import { Play, Zap, Target, PersonStanding, Car, Radar, TrafficCone, ChevronRight, Sparkles, Orbit } from 'lucide-react';
 
 const games = [
@@ -99,6 +100,15 @@ const games = [
     tags: ['Dynamic', 'Control'],
   },
 ];
+
+export const metadata: Metadata = {
+  title: "Interactive Games & Simulations",
+  description: "Play immersive road safety games. From city driving simulations to precision parking challenges, master your skills in high-fidelity 3D environments.",
+  openGraph: {
+    title: "Interactive Road Safety Games | Wayyat",
+    description: "Experience AAA-quality simulations and sharpen your driving reflexes in our immersive game hub.",
+  },
+};
 
 export default function GamesPage() {
   return (

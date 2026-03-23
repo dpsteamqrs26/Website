@@ -1,9 +1,20 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { getUserData, getUserStats, getCourses } from '../actions';
 import {
   Zap, Flame, Trophy, BookOpen, Gamepad2, Award,
   ArrowRight, TrendingUp, Target, Crown, ChevronRight
-} from 'lucide-react';;
+} from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Manage your road safety learning journey. Track your XP, view achievements, and access simulations and courses from your personalized dashboard.",
+  openGraph: {
+    title: "Your Road Safety Dashboard | Wayyat",
+    description: "Track your progress and master road safety in our immersive learning hub.",
+  },
+};
+
 interface UserData {
   clerkId: string;
   xp: number;

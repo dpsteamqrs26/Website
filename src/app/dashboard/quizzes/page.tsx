@@ -1,6 +1,16 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { getQuizzes, isAdmin } from '@/app/actions';
 import { ClipboardList, ChevronRight, Clock, User, Calendar, Target, Plus } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: "Quizzes & Assessments",
+  description: "Test your road safety knowledge with our interactive quizzes. Earn XP, learn traffic rules, and climb the leaderboard.",
+  openGraph: {
+    title: "Road Safety Quizzes | Wayyat",
+    description: "Challenge yourself with interactive assessments and become a road safety expert.",
+  },
+};
 
 export default async function QuizzesPage() {
   const quizzes = await getQuizzes();

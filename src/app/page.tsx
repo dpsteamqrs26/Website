@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import {
   Shield, BookOpen, Gamepad2, Trophy, Zap, BarChart3,
@@ -56,6 +57,23 @@ const howItWorks = [
   { step: "03", title: "Survive & Learn", description: "React to dynamic hazards and perfect your skills" },
   { step: "04", title: "Rank Up", description: "Climb the global tiers and unlock rewards" },
 ];
+
+export const metadata: Metadata = {
+  title: "Home",
+  description: "Welcome to Wayyat, the ultimate road safety education platform. Experience hyper-realistic 3D simulations, engage in interactive courses, and master traffic rules in a gamified environment.",
+  openGraph: {
+    title: "Wayyat — Next-Gen Road Safety Education",
+    description: "Experience AAA-quality road safety simulations and master traffic dynamics in high-fidelity 3D environments.",
+    images: [
+      {
+        url: "/favicon.ico",
+        width: 800,
+        height: 600,
+        alt: "Wayyat Road Safety",
+      },
+    ],
+  },
+};
 
 export default function Home() {
   return (

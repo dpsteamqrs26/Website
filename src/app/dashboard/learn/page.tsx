@@ -1,6 +1,16 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { getCourses, getUserCourseProgress, isAdmin } from '../../actions';
 import { BookOpen, ChevronRight, CheckCircle2, Lock, Star, Plus } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: "Learn Road Safety",
+  description: "Master traffic rules and road safety through our interactive courses. Progress from beginner to expert and become a safer driver.",
+  openGraph: {
+    title: "Wayyat Learning Hub | Road Safety Courses",
+    description: "Interactive road safety education designed to save lives and make you a better driver.",
+  },
+};
 
 function LevelTag({ level }: { level: string }) {
   const config: Record<string, { bg: string; label: string }> = {

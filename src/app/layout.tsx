@@ -17,9 +17,54 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Wayyat — Road Safety Education Platform",
+  title: {
+    default: "Wayyat — Road Safety Education Platform",
+    template: "%s | Wayyat"
+  },
   description: "Learn road safety through gamified courses, quizzes, and interactive games. Earn XP, climb leaderboards, and become a road safety champion.",
-  keywords: ["road safety", "traffic education", "gamified learning", "driving safety", "traffic signs"],
+  keywords: ["road safety", "traffic education", "gamified learning", "driving safety", "traffic signs", "Wayyat", "UAE road safety"],
+  authors: [{ name: "Wayyat Team" }],
+  creator: "Wayyat",
+  publisher: "Wayyat",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://wayyat.ae", // Assuming .ae or similar, but using a generic one if unsure
+    siteName: "Wayyat",
+    title: "Wayyat — Road Safety Education Platform",
+    description: "Master road safety through immersive 3D simulations and gamified learning.",
+    images: [
+      {
+        url: "/favicon.ico", // Using favicon as requested
+        width: 1200,
+        height: 630,
+        alt: "Wayyat Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Wayyat — Road Safety Education Platform",
+    description: "Master road safety through immersive 3D simulations and gamified learning.",
+    images: ["/favicon.ico"],
+    creator: "@wayyat",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
