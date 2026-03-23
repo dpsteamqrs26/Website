@@ -1,7 +1,6 @@
-'use client';
-
 import Link from 'next/link';
 import { Shield, Github, Heart } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -10,12 +9,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600">
-                <Shield className="h-4 w-4 text-white" />
+            <Link href="/" className="flex items-center gap-2 mb-4 group">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-lg transition-transform group-hover:scale-110 overflow-hidden">
+                <Image 
+                  src="/favicon.ico" 
+                  alt="Wayyat Logo" 
+                  width={20} 
+                  height={20}
+                  className="object-contain"
+                />
               </div>
               <span className="text-lg font-bold">
-                <span className="text-green-500">Way</span>
+                <span className="text-yellow-500">Way</span>
                 <span className="text-foreground">yat</span>
               </span>
             </Link>
@@ -78,7 +83,7 @@ export default function Footer() {
             Made with <Heart className="h-3.5 w-3.5 mx-0.5 text-red-500 fill-red-500" /> by{' '}
             <a
               href="https://github.com/Achyut2009"
-              className="font-medium text-foreground hover:text-green-500 transition-colors inline-flex items-center gap-1"
+              className="font-medium text-foreground hover:text-yellow-500 transition-colors inline-flex items-center gap-1"
               target="_blank"
               rel="noopener noreferrer"
             >

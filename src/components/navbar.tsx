@@ -9,6 +9,7 @@ import {
   Trophy, Award, ClipboardList, Image as ImageIcon, 
   LayoutDashboard, LogOut 
 } from 'lucide-react';
+import Image from 'next/image';
 import { toast } from "sonner";
 
 // Shadcn UI Components (Ensure these are installed/available)
@@ -38,11 +39,17 @@ export default function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/20 transition-transform group-hover:scale-110">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/20 shadow-lg transition-transform group-hover:scale-110 overflow-hidden">
+            <Image 
+              src="/favicon.ico" 
+              alt="Wayyat Logo" 
+              width={24} 
+              height={24}
+              className="object-contain"
+            />
           </div>
           <span className="text-xl font-bold tracking-tight">
-            <span className="text-green-500">Way</span>
+            <span className="text-yellow-500">Way</span>
             <span className="text-foreground">yat</span>
           </span>
         </Link>
@@ -65,7 +72,7 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-green-500/25 transition-all hover:shadow-green-500/40 hover:scale-105 active:scale-95">
+              <button className="rounded-full bg-gradient-to-r from-yellow-500 to-amber-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-yellow-500/25 transition-all hover:shadow-yellow-500/40 hover:scale-105 active:scale-95">
                 Sign In
               </button>
             </SignInButton>
@@ -158,7 +165,7 @@ function UserProfileDropdown() {
               appearance={{
                 elements: {
                   rootBox: "h-9 w-9",
-                  avatarBox: 'h-9 w-9 ring-2 ring-green-500/30 transition-all group-hover:ring-green-500/60',
+                  avatarBox: 'h-9 w-9 ring-2 ring-yellow-500/30 transition-all group-hover:ring-yellow-500/60',
                   userButtonTrigger: "pointer-events-none", // Disables Clerk's own menu
                 },
               }}
@@ -184,15 +191,15 @@ function UserProfileDropdown() {
             disabled={isUploading}
             className="cursor-pointer gap-2"
           >
-            <ImageIcon className="h-4 w-4 text-green-500" />
-            <span>{isUploading ? "Uploading..." : "Upload Picture"}</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild className="cursor-pointer gap-2">
-            <Link href="/dashboard">
-              <LayoutDashboard className="h-4 w-4 text-green-500" />
-              <span>Go to Dashboard</span>
-            </Link>
+              <ImageIcon className="h-4 w-4 text-yellow-500" />
+              <span>{isUploading ? "Uploading..." : "Upload Picture"}</span>
+            </DropdownMenuItem>
+  
+            <DropdownMenuItem asChild className="cursor-pointer gap-2">
+              <Link href="/dashboard">
+                <LayoutDashboard className="h-4 w-4 text-yellow-500" />
+                <span>Go to Dashboard</span>
+              </Link>
           </DropdownMenuItem>
 
           <DropdownMenuItem
