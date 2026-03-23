@@ -76,7 +76,7 @@ export default function RootLayout({
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" suppressHydrationWarning>
         <head>
-          <meta name="google-site-verification" content="kz9qG_gWY04lmyENNHTFL-uaq5bSIPtNkO2IV6ce70I" />
+          <meta name="google-site-verification" content="xNQO0p6a6FGPI-rbGyfES3t1rYVxL8zjKMiTMuUosM8" />
         </head>
         <body
           className={`${inter.variable} ${outfit.variable} antialiased`}
