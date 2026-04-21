@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { getCourses, getUserCourseProgress, isAdmin } from '../../actions';
-import { BookOpen, ChevronRight, CheckCircle2, Lock, Star, Plus } from 'lucide-react';
+import { BookOpen, ChevronRight, CheckCircle2, Lock, Star, Plus, Sparkles } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: "Learn Road Safety",
@@ -38,6 +38,9 @@ export default async function LearnPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-500 uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" /> Learning Hub
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
             <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Learn</span> Road Safety
           </h1>
@@ -47,7 +50,7 @@ export default async function LearnPage() {
         {admin && (
           <Link
             href="/dashboard/learn/create"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30 btn-magnetic"
           >
             <Plus className="h-4 w-4" />
             Create Course
@@ -57,7 +60,7 @@ export default async function LearnPage() {
 
       {/* Courses Grid */}
       {courses.length === 0 ? (
-        <div className="rounded-2xl border border-border/50 bg-card p-12 text-center">
+        <div className="rounded-2xl border border-border/50 bg-card p-12 text-center glass-premium">
           <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-bold mb-2">No Courses Available Yet</h3>
           <p className="text-sm text-muted-foreground">Courses will appear here once admins create them. Check back soon!</p>
@@ -75,18 +78,18 @@ export default async function LearnPage() {
               <Link
                 key={course.id}
                 href={`/dashboard/learn/${course.id}`}
-                className="group relative rounded-2xl border border-border/50 bg-card overflow-hidden card-hover"
+                className="group relative rounded-2xl border border-border/50 bg-card overflow-hidden card-hover-glow"
               >
                 {/* Top gradient accent */}
-                <div className={`h-2 w-full ${course.levelRequirement === 'GREEN' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : course.levelRequirement === 'YELLOW' ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
+                <div className={`h-1.5 w-full ${course.levelRequirement === 'GREEN' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : course.levelRequirement === 'YELLOW' ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`} />
 
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 transition-transform group-hover:scale-110">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 transition-all group-hover:scale-110 group-hover:bg-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/10">
                       <BookOpen className="h-5 w-5" />
                     </div>
                     {isCompleted && (
-                      <div className="flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400">
+                      <div className="flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-semibold text-green-600 dark:text-green-400 border border-green-500/20">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Done
                       </div>
@@ -99,7 +102,7 @@ export default async function LearnPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <LevelTag level={course.levelRequirement || 'RED'} />
                     <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
-                      <Star className="h-3 w-3" />
+                      <Star className="h-3 w-3 fill-amber-500" />
                       +{course.pointsAwarded} XP
                     </span>
                   </div>
@@ -113,12 +116,19 @@ export default async function LearnPage() {
                       </div>
                       <div className="xp-bar-bg h-2">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 animate-progress-fill relative overflow-hidden"
                           style={{ width: `${progressPct}%` }}
-                        />
+                        >
+                          <div className="absolute inset-0 animate-shimmer" />
+                        </div>
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Hover arrow */}
+                <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                  <ChevronRight className="h-5 w-5 text-primary" />
                 </div>
               </Link>
             );

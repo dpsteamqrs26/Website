@@ -1,5 +1,5 @@
-import { getUserStats, getUserData, getUserCourseProgress } from '../../actions';
-import { Award, Lock, CheckCircle2, Star, Trophy, Target, BookOpen, Gamepad2, Flame, Zap, Shield, Crown } from 'lucide-react';
+import { getUserStats } from '../../actions';
+import { Award, Lock, CheckCircle2, Star, Trophy, Target, BookOpen, Gamepad2, Flame, Zap, Shield, Crown, Sparkles } from 'lucide-react';
 
 type Achievement = {
   id: string;
@@ -148,6 +148,9 @@ export default async function AchievementsPage() {
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs font-bold text-purple-500 uppercase tracking-wider">
+          <Sparkles className="h-3 w-3" /> Milestones
+        </div>
         <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
           <span className="bg-gradient-to-r from-amber-500 to-purple-500 bg-clip-text text-transparent">Achievements</span>
         </h1>
@@ -155,7 +158,7 @@ export default async function AchievementsPage() {
       </div>
 
       {/* Summary */}
-      <div className="flex items-center justify-center gap-8">
+      <div className="flex items-center justify-center gap-8 stagger-children">
         <div className="text-center">
           <p className="text-3xl font-extrabold text-primary" style={{ fontFamily: 'var(--font-outfit)' }}>{earned.length}</p>
           <p className="text-sm text-muted-foreground">Earned</p>
@@ -173,16 +176,18 @@ export default async function AchievementsPage() {
       </div>
 
       {/* Progress bar */}
-      <div>
+      <div className="rounded-2xl border border-border/50 bg-card p-5">
         <div className="flex justify-between text-sm mb-2">
           <span className="text-muted-foreground">Overall progress</span>
           <span className="font-bold">{Math.round((earned.length / achievements.length) * 100)}%</span>
         </div>
-        <div className="xp-bar-bg h-3">
+        <div className="xp-bar-bg h-3 relative overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 via-purple-500 to-pink-500 animate-progress-fill"
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 via-purple-500 to-pink-500 animate-progress-fill relative"
             style={{ width: `${(earned.length / achievements.length) * 100}%` }}
-          />
+          >
+            <div className="absolute inset-0 animate-shimmer" />
+          </div>
         </div>
       </div>
 
@@ -193,16 +198,17 @@ export default async function AchievementsPage() {
             <CheckCircle2 className="h-5 w-5 text-green-500" />
             Earned ({earned.length})
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 stagger-children">
             {earned.map((achievement) => {
               const progress = achievement.progress(stats);
               return (
                 <div
                   key={achievement.id}
-                  className="rounded-2xl border border-green-200 dark:border-green-800/50 bg-green-50/50 dark:bg-green-950/20 p-5 animate-badge-unlock"
+                  className="rounded-2xl border border-green-200 dark:border-green-800/50 bg-green-50/50 dark:bg-green-950/20 p-5 animate-badge-unlock card-hover relative overflow-hidden group"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${achievement.color} ${achievement.shadow} shadow-lg`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-2xl group-hover:from-green-500/20 transition-colors" />
+                  <div className="relative flex items-start gap-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${achievement.color} ${achievement.shadow} shadow-lg transition-transform group-hover:scale-110`}>
                       <achievement.icon className="h-6 w-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -228,17 +234,17 @@ export default async function AchievementsPage() {
             <Lock className="h-5 w-5 text-muted-foreground" />
             Locked ({locked.length})
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 stagger-children">
             {locked.map((achievement) => {
               const progress = achievement.progress(stats);
               const progressPct = (progress.current / progress.target) * 100;
               return (
                 <div
                   key={achievement.id}
-                  className="rounded-2xl border border-border/50 bg-card p-5 opacity-75"
+                  className="rounded-2xl border border-border/50 bg-card p-5 opacity-75 card-hover hover:opacity-90 transition-opacity group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-transform group-hover:scale-110">
                       <Lock className="h-6 w-6" />
                     </div>
                     <div className="flex-1">
@@ -251,7 +257,7 @@ export default async function AchievementsPage() {
                         </div>
                         <div className="xp-bar-bg h-1.5">
                           <div
-                            className="h-full rounded-full bg-muted-foreground/30"
+                            className="h-full rounded-full bg-muted-foreground/30 animate-progress-fill"
                             style={{ width: `${progressPct}%` }}
                           />
                         </div>

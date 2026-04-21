@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "project": {
+    "id": null,
+    "name": "myway",
+    "repository": "https://github.com/dpsteamqrs26/Website.git",
+    "provider": "GITHUB",
+    "branch": "main"
+  },
+  "stack": {
+    "language": "TypeScript",
+    "framework": "Next.js",
+    "packageManager": "npm",
+    "hasDocker": false,
+    "hasK8s": false,
+    "hasTests": false,
+    "buildCommand": "npm run build",
+    "testCommand": "",
+    "lintCommand": "npm run lint",
+    "startCommand": "npm start"
+  },
+  "pipeline": {
+    "stages": [
+      {
+        "id": "install",
+        "type": "BUILD",
+        "name": "Install Dependencies",
+        "command": "npm install",
+        "dependsOn": []
+      },
+      {
+        "id": "lint",
+        "type": "LINT",
+        "name": "Lint Code",
+        "command": "npm run lint",
+        "dependsOn": [
+          "install"
+        ]
+      },
+      {
+        "id": "build",
+        "type": "BUILD",
+        "name": "Build",
+        "command": "npm run build",
+        "dependsOn": [
+          "install",
+          "lint"
+        ]
+      }
+    ]
+  },
+  "environments": [
+    "Development",
+    "Staging",
+    "Production"
+  ],
+  "ai": {
+    "autoFix": true,
+    "riskThreshold": 60
+  }
+}

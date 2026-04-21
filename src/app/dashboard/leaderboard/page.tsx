@@ -1,5 +1,5 @@
 import { getLeaderboard, getUserData } from '../../actions';
-import { Trophy, Crown, Medal, Award, Zap, Flame, TrendingUp } from 'lucide-react';
+import { Trophy, Crown, Medal, Award, Zap, Flame, Sparkles } from 'lucide-react';
 
 function LevelBadge({ level }: { level: string }) {
   const config: Record<string, { bg: string; label: string }> = {
@@ -25,6 +25,9 @@ export default async function LeaderboardPage() {
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-bold text-amber-500 uppercase tracking-wider">
+          <Sparkles className="h-3 w-3" /> Global Rankings
+        </div>
         <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
           <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">Leaderboard</span>
         </h1>
@@ -33,10 +36,11 @@ export default async function LeaderboardPage() {
 
       {/* Your rank card */}
       {userData && userRank > 0 && (
-        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 card-hover-glow animate-fade-in-up relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-xl font-bold text-white shadow-lg shadow-green-500/25">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-xl font-bold text-white shadow-lg shadow-green-500/25 animate-pulse-glow">
                 #{userRank}
               </div>
               <div>
@@ -56,13 +60,13 @@ export default async function LeaderboardPage() {
 
       {/* Top 3 Podium */}
       {leaderboard.length >= 3 && (
-        <div className="flex items-end justify-center gap-4">
+        <div className="flex items-end justify-center gap-4 stagger-children">
           {/* Silver (2nd) */}
           <div className="flex flex-col items-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-slate-300 to-slate-400 text-xl font-bold text-white shadow-lg mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-slate-300 to-slate-400 text-xl font-bold text-white shadow-lg mb-2 transition-transform hover:scale-110">
               2
             </div>
-            <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28">
+            <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28 card-hover">
               <Medal className="h-6 w-6 text-slate-400 mx-auto mb-1" />
               <p className="text-xs font-bold truncate">{leaderboard[1]?.name || 'Player 2'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[1]?.xp || 0).toLocaleString()} XP</p>
@@ -72,10 +76,10 @@ export default async function LeaderboardPage() {
 
           {/* Gold (1st) */}
           <div className="flex flex-col items-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 text-2xl font-bold text-white shadow-xl shadow-amber-500/30 mb-2 animate-pulse-glow">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 text-2xl font-bold text-white shadow-xl shadow-amber-500/30 mb-2 animate-pulse-glow transition-transform hover:scale-110">
               1
             </div>
-            <div className="rounded-xl bg-card border border-amber-200 dark:border-amber-800 p-4 text-center w-32">
+            <div className="rounded-xl bg-card border border-amber-200 dark:border-amber-800 p-4 text-center w-32 card-hover">
               <Crown className="h-6 w-6 text-amber-500 mx-auto mb-1" />
               <p className="text-sm font-bold truncate">{leaderboard[0]?.name || 'Player 1'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[0]?.xp || 0).toLocaleString()} XP</p>
@@ -86,10 +90,10 @@ export default async function LeaderboardPage() {
 
           {/* Bronze (3rd) */}
           <div className="flex flex-col items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-amber-700 text-lg font-bold text-white shadow-lg mb-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-amber-700 text-lg font-bold text-white shadow-lg mb-2 transition-transform hover:scale-110">
               3
             </div>
-            <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28">
+            <div className="rounded-xl bg-card border border-border/50 p-4 text-center w-28 card-hover">
               <Award className="h-6 w-6 text-amber-700 mx-auto mb-1" />
               <p className="text-xs font-bold truncate">{leaderboard[2]?.name || 'Player 3'}</p>
               <p className="text-xs text-muted-foreground">{(leaderboard[2]?.xp || 0).toLocaleString()} XP</p>
@@ -100,8 +104,8 @@ export default async function LeaderboardPage() {
       )}
 
       {/* Full Ranking List */}
-      <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
-        <div className="grid grid-cols-[60px_1fr_100px_100px] gap-2 px-4 py-3 bg-accent/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm">
+        <div className="grid grid-cols-[60px_1fr_100px_100px] gap-2 px-4 py-3 bg-accent/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30">
           <span>Rank</span>
           <span>Player</span>
           <span className="text-right">XP</span>
@@ -120,11 +124,11 @@ export default async function LeaderboardPage() {
               return (
                 <div
                   key={user.clerkId}
-                  className={`grid grid-cols-[60px_1fr_100px_100px] gap-2 items-center px-4 py-3 transition-colors ${isYou ? 'bg-primary/5 font-semibold' : 'hover:bg-accent/30'}`}
+                  className={`grid grid-cols-[60px_1fr_100px_100px] gap-2 items-center px-4 py-3 transition-all duration-200 ${isYou ? 'bg-primary/5 font-semibold border-l-2 border-primary' : 'hover:bg-accent/30'}`}
                 >
                   <div className="flex items-center">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                      i === 0 ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white' :
+                      i === 0 ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-sm shadow-amber-500/30' :
                       i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
                       i === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
                       'bg-muted text-muted-foreground'
@@ -136,7 +140,7 @@ export default async function LeaderboardPage() {
                     {isYou ? '⭐ You' : (user.name || `Player ${i + 1}`)}
                   </span>
                   <span className="text-sm text-right flex items-center justify-end gap-1">
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                     {(user.xp || 0).toLocaleString()}
                   </span>
                   <span className="text-right">

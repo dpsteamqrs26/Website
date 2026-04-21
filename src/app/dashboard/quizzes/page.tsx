@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { getQuizzes, isAdmin } from '@/app/actions';
-import { ClipboardList, ChevronRight, Clock, User, Calendar, Target, Plus } from 'lucide-react';
+import { ClipboardList, ChevronRight, Clock, Calendar, Target, Plus, Sparkles, Zap } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: "Quizzes & Assessments",
@@ -21,6 +21,9 @@ export default async function QuizzesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-500 uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" /> Assessments
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-outfit)' }}>
             <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Quizzes</span> & Assessments
           </h1>
@@ -29,7 +32,7 @@ export default async function QuizzesPage() {
         {admin && (
           <Link
             href="/dashboard/quizzes/create"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 px-4 py-2 font-bold text-white shadow-lg transition-all hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 px-5 py-2.5 font-bold text-white shadow-lg transition-all hover:scale-105 btn-magnetic text-sm"
           >
             <Plus className="h-4 w-4" />
             Create Quiz
@@ -38,7 +41,7 @@ export default async function QuizzesPage() {
       </div>
 
       {quizzes.length === 0 ? (
-        <div className="rounded-2xl border border-border/50 bg-card p-12 text-center">
+        <div className="rounded-2xl border border-border/50 bg-card p-12 text-center glass-premium">
           <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-bold mb-2">No Quizzes Available</h3>
           <p className="text-sm text-muted-foreground">Stay tuned! Our team is preparing new assessments for you.</p>
@@ -49,14 +52,17 @@ export default async function QuizzesPage() {
             <Link
               key={quiz.id}
               href={`/dashboard/games/quiz?quizId=${quiz.id}`}
-              className="group relative rounded-2xl border border-border/50 bg-card p-6 card-hover"
+              className="group relative rounded-2xl border border-border/50 bg-card p-6 card-hover-glow overflow-hidden"
             >
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+
               <div className="flex items-start justify-between mb-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 transition-transform group-hover:scale-110">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 transition-all group-hover:scale-110 group-hover:bg-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/10">
                   <ClipboardList className="h-6 w-6" />
                 </div>
-                <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                  <Target className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <Zap className="h-3.5 w-3.5 fill-amber-500" />
                   +10 XP / Answer
                 </div>
               </div>
@@ -75,9 +81,9 @@ export default async function QuizzesPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-1 text-sm font-bold text-emerald-500 group-hover:gap-2 transition-all">
+              <div className="mt-6 flex items-center gap-1.5 text-sm font-bold text-emerald-500 group-hover:gap-3 transition-all">
                 Start Quiz
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </div>
             </Link>
           ))}
